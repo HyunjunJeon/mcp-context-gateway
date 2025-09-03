@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/export_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/export_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Export Service Implementation.
-This module implements comprehensive configuration export functionality according to the export specification.
-It handles:
-- Entity collection from all entity types (Tools, Gateways, Servers, Prompts, Resources, Roots)
-- Secure authentication data encryption using AES-256-GCM
-- Dependency resolution and inclusion
-- Filtering by entity types, tags, and active/inactive status
-- Export format validation and schema compliance
-- Only exports locally configured entities (not federated content)
+구성 내보내기 서비스 구현 모듈
+
+내보내기 사양에 따라 포괄적인 구성 내보내기 기능을 구현합니다.
+다음 항목들을 처리합니다:
+- 모든 엔티티 타입에서 엔티티 수집 (도구, 게이트웨이, 서버, 프롬프트, 리소스, 루트)
+- AES-256-GCM을 사용한 안전한 인증 데이터 암호화
+- 의존성 해결 및 포함
+- 엔티티 타입, 태그, 활성화/비활성화 상태별 필터링
+- 내보내기 형식 검증 및 스키마 준수
+- 로컬로 구성된 엔티티만 내보내기 (연합 콘텐츠 제외)
 """
 
-# Standard
+# 표준 라이브러리 임포트
 from datetime import datetime, timezone
 import logging
 from typing import Any, Dict, List, Optional
 
-# Third-Party
+# 서드파티 라이브러리 임포트
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.config import settings
 from mcpgateway.db import Gateway as DbGateway
 from mcpgateway.db import Tool as DbTool
@@ -39,29 +40,30 @@ logger = logging.getLogger(__name__)
 
 
 class ExportError(Exception):
-    """Base class for export-related errors."""
+    """내보내기 관련 오류들의 기본 클래스입니다."""
 
 
 class ExportValidationError(ExportError):
-    """Raised when export data validation fails."""
+    """내보내기 데이터 검증 실패 시 발생하는 예외입니다."""
 
 
 class ExportService:
-    """Service for exporting MCP Gateway configuration and data.
+    """MCP 게이트웨이 구성 및 데이터를 내보내는 서비스 클래스입니다.
 
-    This service provides comprehensive export functionality including:
-    - Collection of all entity types (tools, gateways, servers, prompts, resources, roots)
-    - Secure handling of authentication data with encryption
-    - Dependency resolution between entities
-    - Filtering options (by type, tags, status)
-    - Export format validation
+    이 서비스는 다음과 같은 포괄적인 내보내기 기능을 제공합니다:
+    - 모든 엔티티 타입 수집 (도구, 게이트웨이, 서버, 프롬프트, 리소스, 루트)
+    - 암호화를 통한 인증 데이터의 안전한 처리
+    - 엔티티 간 의존성 해결
+    - 필터링 옵션 (타입, 태그, 상태별)
+    - 내보내기 형식 검증
 
-    The service only exports locally configured entities, excluding dynamic content
-    from federated sources to ensure exports contain only configuration data.
+    이 서비스는 로컬로 구성된 엔티티만 내보내며, 연합 소스의 동적 콘텐츠를
+    제외하여 내보내기에 구성 데이터만 포함되도록 보장합니다.
     """
 
     def __init__(self):
-        """Initialize the export service with required dependencies."""
+        """필요한 의존성과 함께 내보내기 서비스를 초기화합니다."""
+        # 각 엔티티 타입을 처리하기 위한 서비스 인스턴스들 초기화
         self.gateway_service = GatewayService()
         self.tool_service = ToolService()
         self.resource_service = ResourceService()
@@ -70,12 +72,12 @@ class ExportService:
         self.root_service = RootService()
 
     async def initialize(self) -> None:
-        """Initialize the export service."""
-        logger.info("Export service initialized")
+        """내보내기 서비스를 초기화합니다."""
+        logger.info("내보내기 서비스 초기화됨")
 
     async def shutdown(self) -> None:
-        """Shutdown the export service."""
-        logger.info("Export service shutdown")
+        """내보내기 서비스를 종료합니다."""
+        logger.info("내보내기 서비스 종료됨")
 
     async def export_configuration(
         self,
@@ -87,88 +89,106 @@ class ExportService:
         include_dependencies: bool = True,
         exported_by: str = "system",
     ) -> Dict[str, Any]:
-        """Export complete gateway configuration to a standardized format.
+        """완전한 게이트웨이 구성을 표준화된 형식으로 내보냅니다.
 
         Args:
-            db: Database session
-            include_types: List of entity types to include (tools, gateways, servers, prompts, resources, roots)
-            exclude_types: List of entity types to exclude
-            tags: Filter entities by tags (only export entities with these tags)
-            include_inactive: Whether to include inactive entities
-            include_dependencies: Whether to include dependent entities automatically
-            exported_by: Username of the person performing the export
+            db: 데이터베이스 세션
+            include_types: 포함할 엔티티 타입 목록 (tools, gateways, servers, prompts, resources, roots)
+            exclude_types: 제외할 엔티티 타입 목록
+            tags: 태그별 엔티티 필터링 (이 태그들을 가진 엔티티만 내보내기)
+            include_inactive: 비활성화된 엔티티도 포함할지 여부
+            include_dependencies: 종속 엔티티를 자동으로 포함할지 여부
+            exported_by: 내보내기를 수행한 사용자의 이름
 
         Returns:
-            Dict containing the complete export data in the specified schema format
+            지정된 스키마 형식의 완전한 내보내기 데이터를 포함하는 딕셔너리
 
         Raises:
-            ExportError: If export fails
-            ExportValidationError: If validation fails
+            ExportError: 내보내기 실패 시
+            ExportValidationError: 검증 실패 시
         """
         try:
-            logger.info(f"Starting configuration export by {exported_by}")
+            logger.info(f"{exported_by}에 의한 구성 내보내기 시작")
 
-            # Determine which entity types to include
+            # 포함할 엔티티 타입 결정
             all_types = ["tools", "gateways", "servers", "prompts", "resources", "roots"]
             if include_types:
+                # 지정된 타입들 중 유효한 것만 필터링
                 entity_types = [t.lower() for t in include_types if t.lower() in all_types]
             else:
+                # 모든 타입 포함
                 entity_types = all_types
 
             if exclude_types:
+                # 제외할 타입들을 필터링하여 제거
                 entity_types = [t for t in entity_types if t.lower() not in [e.lower() for e in exclude_types]]
 
-            # Initialize export structure
+            # 내보내기 구조 초기화
             export_data = {
                 "version": settings.protocol_version,
                 "exported_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "exported_by": exported_by,
                 "source_gateway": f"http://{settings.host}:{settings.port}",
                 "encryption_method": "AES-256-GCM",
-                "entities": {},
+                "entities": {},  # 엔티티 데이터를 담을 컨테이너
                 "metadata": {
-                    "entity_counts": {},
-                    "dependencies": {},
-                    "export_options": {"include_inactive": include_inactive, "include_dependencies": include_dependencies, "selected_types": entity_types, "filter_tags": tags or []},
+                    "entity_counts": {},  # 각 타입별 엔티티 수
+                    "dependencies": {},   # 엔티티 간 의존성 정보
+                    "export_options": {   # 내보내기 옵션 설정
+                        "include_inactive": include_inactive,
+                        "include_dependencies": include_dependencies,
+                        "selected_types": entity_types,
+                        "filter_tags": tags or []
+                    },
                 },
             }
 
-            # Export each entity type
+            # 각 엔티티 타입별로 내보내기 수행
             if "tools" in entity_types:
+                # 도구 엔티티 내보내기 (태그 필터링 및 활성화 상태 고려)
                 export_data["entities"]["tools"] = await self._export_tools(db, tags, include_inactive)
 
             if "gateways" in entity_types:
+                # 게이트웨이 엔티티 내보내기 (태그 필터링 및 활성화 상태 고려)
                 export_data["entities"]["gateways"] = await self._export_gateways(db, tags, include_inactive)
 
             if "servers" in entity_types:
+                # 서버 엔티티 내보내기 (태그 필터링 및 활성화 상태 고려)
                 export_data["entities"]["servers"] = await self._export_servers(db, tags, include_inactive)
 
             if "prompts" in entity_types:
+                # 프롬프트 엔티티 내보내기 (태그 필터링 및 활성화 상태 고려)
                 export_data["entities"]["prompts"] = await self._export_prompts(db, tags, include_inactive)
 
             if "resources" in entity_types:
+                # 리소스 엔티티 내보내기 (태그 필터링 및 활성화 상태 고려)
                 export_data["entities"]["resources"] = await self._export_resources(db, tags, include_inactive)
 
             if "roots" in entity_types:
+                # 루트 엔티티 내보내기 (태그나 활성화 상태 필터링 없음)
                 export_data["entities"]["roots"] = await self._export_roots()
 
-            # Add dependency information
+            # 의존성 정보 추가
             if include_dependencies:
+                # 엔티티 간의 의존성 관계 추출 및 추가
                 export_data["metadata"]["dependencies"] = await self._extract_dependencies(db, export_data["entities"])
 
-            # Calculate entity counts
+            # 엔티티 수 계산
             for entity_type, entities in export_data["entities"].items():
+                # 각 엔티티 타입별로 엔티티 개수 저장
                 export_data["metadata"]["entity_counts"][entity_type] = len(entities)
 
-            # Validate export data
+            # 내보내기 데이터 검증
             self._validate_export_data(export_data)
 
-            logger.info(f"Export completed successfully with {sum(export_data['metadata']['entity_counts'].values())} total entities")
+            # 성공 로그 기록 및 결과 반환
+            total_entities = sum(export_data['metadata']['entity_counts'].values())
+            logger.info(f"총 {total_entities}개 엔티티와 함께 내보내기가 성공적으로 완료됨")
             return export_data
 
         except Exception as e:
-            logger.error(f"Export failed: {str(e)}")
-            raise ExportError(f"Failed to export configuration: {str(e)}")
+            logger.error(f"내보내기 실패: {str(e)}")
+            raise ExportError(f"구성 내보내기에 실패했습니다: {str(e)}")
 
     async def _export_tools(self, db: Session, tags: Optional[List[str]], include_inactive: bool) -> List[Dict[str, Any]]:
         """Export tools with encrypted authentication data.

@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/gateway_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/gateway_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Gateway Service Implementation.
-This module implements gateway federation according to the MCP specification.
-It handles:
-- Gateway discovery and registration
-- Request forwarding
-- Capability aggregation
-- Health monitoring
-- Active/inactive gateway management
+게이트웨이 서비스 구현 모듈
 
-Examples:
+MCP 사양에 따라 게이트웨이 페데레이션을 구현합니다.
+다음 항목들을 처리합니다:
+- 게이트웨이 검색 및 등록
+- 요청 포워딩
+- 기능 집계
+- 헬스 모니터링
+- 활성화/비활성화 게이트웨이 관리
+
+예시:
     >>> from mcpgateway.services.gateway_service import GatewayService, GatewayError
     >>> service = GatewayService()
     >>> isinstance(service, GatewayService)
@@ -23,7 +24,7 @@ Examples:
     >>> isinstance(service._active_gateways, set)
     True
 
-    Test error classes:
+    오류 클래스 테스트:
     >>> error = GatewayError("Test error")
     >>> str(error)
     'Test error'
@@ -37,7 +38,7 @@ Examples:
     True
 """
 
-# Standard
+# 표준 라이브러리 임포트
 import asyncio
 from datetime import datetime, timezone
 import logging
@@ -48,7 +49,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Set, TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 import uuid
 
-# Third-Party
+# 서드파티 라이브러리 임포트
 from filelock import FileLock, Timeout
 import httpx
 from mcp import ClientSession
@@ -59,15 +60,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 try:
-    # Third-Party
+    # 서드파티 라이브러리 임포트 (선택적)
     import redis
 
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    logging.info("Redis is not utilized in this environment.")
+    logging.info("이 환경에서는 Redis를 사용하지 않습니다.")
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.config import settings
 from mcpgateway.db import Gateway as DbGateway
 from mcpgateway.db import Prompt as DbPrompt
@@ -77,7 +78,7 @@ from mcpgateway.db import Tool as DbTool
 from mcpgateway.observability import create_span
 from mcpgateway.schemas import GatewayCreate, GatewayRead, GatewayUpdate, PromptCreate, ResourceCreate, ToolCreate
 
-# logging.getLogger("httpx").setLevel(logging.WARNING)  # Disables httpx logs for regular health checks
+# logging.getLogger("httpx").setLevel(logging.WARNING)  # 일반 헬스 체크를 위한 httpx 로그 비활성화
 from mcpgateway.services.logging_service import LoggingService
 from mcpgateway.services.oauth_manager import OAuthManager
 from mcpgateway.services.tool_service import ToolService
@@ -86,7 +87,7 @@ from mcpgateway.utils.display_name import generate_display_name
 from mcpgateway.utils.retry_manager import ResilientHttpClient
 from mcpgateway.utils.services_auth import decode_auth, encode_auth
 
-# Initialize logging service first
+# 로깅 서비스 초기화
 logging_service = LoggingService()
 logger = logging_service.get_logger(__name__)
 
@@ -96,9 +97,9 @@ GW_HEALTH_CHECK_INTERVAL = settings.health_check_interval
 
 
 class GatewayError(Exception):
-    """Base class for gateway-related errors.
+    """게이트웨이 관련 오류들의 기본 클래스입니다.
 
-    Examples:
+    예시:
         >>> error = GatewayError("Test error")
         >>> str(error)
         'Test error'

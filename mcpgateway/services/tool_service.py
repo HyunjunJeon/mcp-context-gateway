@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/tool_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/tool_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Tool Service Implementation.
-This module implements tool management and invocation according to the MCP specification.
-It handles:
-- Tool registration and validation
-- Tool invocation with schema validation
-- Tool federation across gateways
-- Event notifications for tool changes
-- Active/inactive tool management
+도구 서비스 구현 모듈
+
+MCP 사양에 따라 도구 관리 및 호출을 구현합니다.
+다음 항목들을 처리합니다:
+- 도구 등록 및 검증
+- 스키마 검증을 통한 도구 호출
+- 게이트웨이에 걸친 도구 페데레이션
+- 도구 변경에 대한 이벤트 알림
+- 활성화/비활성화 도구 관리
 """
 
 # Standard

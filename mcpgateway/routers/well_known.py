@@ -4,10 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Well-Known URI Handler Router.
-This module implements a flexible /.well-known/* endpoint handler that supports
-standard well-known URIs like security.txt and robots.txt with user-configurable content.
-Defaults assume private API deployment with crawling disabled.
+Well-Known URI 핸들러 라우터.
+이 모듈은 security.txt 및 robots.txt와 같은 표준 well-known URI를 지원하는
+유연한 /.well-known/* 엔드포인트 핸들러를 구현합니다.
+기본값은 크롤링이 비활성화된 비공개 API 배포를 가정합니다.
 """
 
 # Standard
@@ -40,31 +40,31 @@ WELL_KNOWN_REGISTRY = {
 
 
 def validate_security_txt(content: str) -> Optional[str]:
-    """Validate security.txt format and add headers if missing.
+    """security.txt 형식을 검증하고 누락된 헤더를 추가합니다.
 
     Args:
-        content: The security.txt content to validate.
+        content: 검증할 security.txt 내용.
 
     Returns:
-        Validated security.txt content with added headers, or None if content is empty.
+        헤더가 추가된 검증된 security.txt 내용, 또는 내용이 비어있는 경우 None.
     """
     if not content:
         return None
 
     lines = content.strip().split("\n")
 
-    # Check if Expires field exists
+    # Expires 필드가 있는지 확인
     has_expires = any(line.strip().startswith("Expires:") for line in lines)
 
-    # Add Expires field if missing (6 months from now)
+    # Expires 필드가 없으면 추가 (현재로부터 6개월 후)
     if not has_expires:
         expires = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=180)
         lines.append(f"Expires: {expires.isoformat()}Z")
 
-    # Ensure it starts with required headers
+    # 필수 헤더로 시작하는지 확인
     validated = []
 
-    # Add header comment if not present
+    # 헤더 주석이 없으면 추가
     if not lines[0].startswith("#"):
         validated.append("# Security contact information for MCP Gateway")
         validated.append(f"# Generated: {datetime.now(timezone.utc).replace(microsecond=0).isoformat()}Z")
@@ -78,39 +78,40 @@ def validate_security_txt(content: str) -> Optional[str]:
 @router.get("/.well-known/{filename:path}", include_in_schema=False)
 async def get_well_known_file(filename: str, response: Response, request: Request):
     """
-    Serve well-known URI files.
+    well-known URI 파일을 제공합니다.
 
-    Supports:
-    - robots.txt: Robot exclusion (default: disallow all)
-    - security.txt: Security contact information (if configured)
-    - Custom files: Additional well-known files via configuration
+    지원:
+    - robots.txt: 로봇 제외 표준 (기본값: 모두 허용 안함)
+    - security.txt: 보안 연락처 정보 (구성된 경우)
+    - 사용자 정의 파일: 구성을 통한 추가 well-known 파일
 
     Args:
-        filename: The well-known filename requested
-        response: FastAPI response object for headers
-        request: FastAPI request object for logging
+        filename: 요청된 well-known 파일명
+        response: 헤더를 위한 FastAPI 응답 객체
+        request: 로깅을 위한 FastAPI 요청 객체
 
     Returns:
-        Plain text content of the requested file
+        요청된 파일의 일반 텍스트 내용
 
     Raises:
-        HTTPException: 404 if file not found or well-known disabled
+        HTTPException: 파일을 찾을 수 없거나 well-known이 비활성화된 경우 404
     """
+    # 1. well-known 기능이 활성화되어 있는지 확인
     if not settings.well_known_enabled:
         raise HTTPException(status_code=404, detail="Not found")
 
-    # Normalize filename (remove any leading slashes)
+    # 2. 파일명 정규화 (선행 슬래시 제거)
     filename = filename.strip("/")
 
-    # Prepare common headers
+    # 3. 공통 헤더 준비
     common_headers = {"Cache-Control": f"public, max-age={settings.well_known_cache_max_age}"}
 
-    # Handle robots.txt
+    # 4. robots.txt 처리
     if filename == "robots.txt":
         headers = {**common_headers, "X-Robots-Tag": "noindex, nofollow"}
         return PlainTextResponse(content=settings.well_known_robots_txt, media_type="text/plain; charset=utf-8", headers=headers)
 
-    # Handle security.txt
+    # 5. security.txt 처리
     elif filename == "security.txt":
         if not settings.well_known_security_txt_enabled:
             raise HTTPException(status_code=404, detail="security.txt not configured")
@@ -121,20 +122,20 @@ async def get_well_known_file(filename: str, response: Response, request: Reques
 
         return PlainTextResponse(content=content, media_type="text/plain; charset=utf-8", headers=common_headers)
 
-    # Handle custom files
+    # 6. 사용자 정의 파일 처리
     elif filename in settings.custom_well_known_files:
         content = settings.custom_well_known_files[filename]
 
-        # Determine content type
+        # 콘텐츠 타입 결정
         content_type = "text/plain; charset=utf-8"
         if filename in WELL_KNOWN_REGISTRY:
             content_type = f"{WELL_KNOWN_REGISTRY[filename]['content_type']}; charset=utf-8"
 
         return PlainTextResponse(content=content, media_type=content_type, headers=common_headers)
 
-    # File not found
+    # 7. 파일을 찾을 수 없음
     else:
-        # Provide helpful error for known well-known URIs
+        # 알려진 well-known URI에 대한 유용한 오류 메시지 제공
         if filename in WELL_KNOWN_REGISTRY:
             raise HTTPException(status_code=404, detail=f"{filename} is not configured. This is a {WELL_KNOWN_REGISTRY[filename]['description']} file.")
         else:
@@ -144,24 +145,24 @@ async def get_well_known_file(filename: str, response: Response, request: Reques
 @router.get("/admin/well-known", response_model=dict)
 async def get_well_known_status(user: str = Depends(require_auth)):
     """
-    Get status of well-known URI configuration.
+    well-known URI 구성 상태를 조회합니다.
 
     Args:
-        user: Authenticated user from dependency injection.
+        user: 의존성 주입을 통한 인증된 사용자.
 
     Returns:
-        Dict containing well-known configuration status and available files.
+        well-known 구성 상태와 사용 가능한 파일을 포함하는 딕셔너리.
     """
     configured_files = []
 
-    # Always available
+    # 항상 사용 가능
     configured_files.append({"path": "/.well-known/robots.txt", "enabled": True, "description": "Robot exclusion standard", "cache_max_age": settings.well_known_cache_max_age})
 
-    # Conditionally available
+    # 조건부로 사용 가능
     if settings.well_known_security_txt_enabled:
         configured_files.append({"path": "/.well-known/security.txt", "enabled": True, "description": "Security contact information", "cache_max_age": settings.well_known_cache_max_age})
 
-    # Custom files
+    # 사용자 정의 파일들
     for filename in settings.custom_well_known_files:
         configured_files.append({"path": f"/.well-known/{filename}", "enabled": True, "description": "Custom well-known file", "cache_max_age": settings.well_known_cache_max_age})
 

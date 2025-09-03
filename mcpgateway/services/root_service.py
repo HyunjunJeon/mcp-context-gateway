@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/root_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/root_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Root Service Implementation.
-This module implements root directory management according to the MCP specification.
-It handles root registration, validation, and change notifications.
+루트 서비스 구현 모듈
+
+MCP 사양에 따라 루트 디렉토리 관리를 구현합니다.
+루트 등록, 검증, 변경 알림을 처리합니다.
 """
 
 # Standard

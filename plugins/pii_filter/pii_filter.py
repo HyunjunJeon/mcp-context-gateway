@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""PII Filter Plugin for MCP Gateway.
+"""MCP 게이트웨이를 위한 PII 필터 플러그인.
 
 Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-This plugin detects and masks Personally Identifiable Information (PII) in prompts
-and their responses, including SSNs, credit cards, emails, phone numbers, and more.
+이 플러그인은 프롬프트와 응답에서 개인 식별 정보(PII)를 탐지하고 마스킹합니다.
+SSN, 신용카드, 이메일, 전화번호 등을 포함합니다.
 """
 
 # Standard
@@ -40,124 +40,136 @@ logger = logging_service.get_logger(__name__)
 
 
 class PIIType(str, Enum):
-    """Types of PII that can be detected."""
+    """탐지할 수 있는 PII(개인 식별 정보)의 유형들."""
 
-    SSN = "ssn"
-    CREDIT_CARD = "credit_card"
-    EMAIL = "email"
-    PHONE = "phone"
-    IP_ADDRESS = "ip_address"
-    DATE_OF_BIRTH = "date_of_birth"
-    PASSPORT = "passport"
-    DRIVER_LICENSE = "driver_license"
-    BANK_ACCOUNT = "bank_account"
-    MEDICAL_RECORD = "medical_record"
-    AWS_KEY = "aws_key"
-    API_KEY = "api_key"
-    CUSTOM = "custom"
+    SSN = "ssn"                    # 사회보장번호
+    CREDIT_CARD = "credit_card"    # 신용카드 번호
+    EMAIL = "email"               # 이메일 주소
+    PHONE = "phone"               # 전화번호
+    IP_ADDRESS = "ip_address"     # IP 주소
+    DATE_OF_BIRTH = "date_of_birth" # 생년월일
+    PASSPORT = "passport"         # 여권 번호
+    DRIVER_LICENSE = "driver_license" # 운전면허증 번호
+    BANK_ACCOUNT = "bank_account" # 은행 계좌 번호
+    MEDICAL_RECORD = "medical_record" # 의료 기록 번호
+    AWS_KEY = "aws_key"          # AWS 액세스 키
+    API_KEY = "api_key"          # API 키
+    CUSTOM = "custom"            # 사용자 정의 패턴
 
 
 class MaskingStrategy(str, Enum):
-    """Strategies for masking detected PII."""
+    """탐지된 PII를 마스킹하는 전략들."""
 
-    REDACT = "redact"  # Replace with [REDACTED]
-    PARTIAL = "partial"  # Show partial info (e.g., ***-**-1234)
-    HASH = "hash"  # Replace with hash
-    TOKENIZE = "tokenize"  # Replace with token
-    REMOVE = "remove"  # Remove entirely
+    REDACT = "redact"     # [REDACTED]로 교체
+    PARTIAL = "partial"   # 부분 정보 표시 (예: ***-**-1234)
+    HASH = "hash"        # 해시로 교체
+    TOKENIZE = "tokenize" # 토큰으로 교체
+    REMOVE = "remove"    # 완전히 제거
 
 
 class PIIPattern(BaseModel):
-    """Configuration for a PII pattern."""
+    """PII 패턴을 위한 설정 클래스."""
 
-    type: PIIType
-    pattern: str
-    description: str
-    mask_strategy: MaskingStrategy = MaskingStrategy.REDACT
-    enabled: bool = True
+    type: PIIType                    # PII 유형
+    pattern: str                    # 정규식 패턴
+    description: str               # 패턴 설명
+    mask_strategy: MaskingStrategy = MaskingStrategy.REDACT  # 마스킹 전략 (기본값: REDACT)
+    enabled: bool = True           # 패턴 활성화 여부 (기본값: True)
 
 
 class PIIFilterConfig(BaseModel):
-    """Configuration for the PII Filter plugin."""
+    """PII 필터 플러그인을 위한 설정 클래스."""
 
-    # Enable/disable detection for specific PII types
-    detect_ssn: bool = Field(default=True, description="Detect Social Security Numbers")
-    detect_credit_card: bool = Field(default=True, description="Detect credit card numbers")
-    detect_email: bool = Field(default=True, description="Detect email addresses")
-    detect_phone: bool = Field(default=True, description="Detect phone numbers")
-    detect_ip_address: bool = Field(default=True, description="Detect IP addresses")
-    detect_date_of_birth: bool = Field(default=True, description="Detect dates of birth")
-    detect_passport: bool = Field(default=True, description="Detect passport numbers")
-    detect_driver_license: bool = Field(default=True, description="Detect driver's license numbers")
-    detect_bank_account: bool = Field(default=True, description="Detect bank account numbers")
-    detect_medical_record: bool = Field(default=True, description="Detect medical record numbers")
-    detect_aws_keys: bool = Field(default=True, description="Detect AWS access keys")
-    detect_api_keys: bool = Field(default=True, description="Detect generic API keys")
+    # 특정 PII 유형에 대한 탐지 활성화/비활성화
+    detect_ssn: bool = Field(default=True, description="사회보장번호 탐지")
+    detect_credit_card: bool = Field(default=True, description="신용카드 번호 탐지")
+    detect_email: bool = Field(default=True, description="이메일 주소 탐지")
+    detect_phone: bool = Field(default=True, description="전화번호 탐지")
+    detect_ip_address: bool = Field(default=True, description="IP 주소 탐지")
+    detect_date_of_birth: bool = Field(default=True, description="생년월일 탐지")
+    detect_passport: bool = Field(default=True, description="여권 번호 탐지")
+    detect_driver_license: bool = Field(default=True, description="운전면허증 번호 탐지")
+    detect_bank_account: bool = Field(default=True, description="은행 계좌 번호 탐지")
+    detect_medical_record: bool = Field(default=True, description="의료 기록 번호 탐지")
+    detect_aws_keys: bool = Field(default=True, description="AWS 액세스 키 탐지")
+    detect_api_keys: bool = Field(default=True, description="일반 API 키 탐지")
 
-    # Masking configuration
+    # 마스킹 설정
     default_mask_strategy: MaskingStrategy = Field(
         default=MaskingStrategy.REDACT,
-        description="Default masking strategy"
+        description="기본 마스킹 전략"
     )
-    redaction_text: str = Field(default="[REDACTED]", description="Text to use for redaction")
+    redaction_text: str = Field(default="[REDACTED]", description="삭제 시 사용할 텍스트")
 
-    # Behavior configuration
+    # 동작 설정
     block_on_detection: bool = Field(
         default=False,
-        description="Block request if PII is detected"
+        description="PII 탐지 시 요청 차단"
     )
-    log_detections: bool = Field(default=True, description="Log PII detections")
+    log_detections: bool = Field(default=True, description="PII 탐지 로그 기록")
     include_detection_details: bool = Field(
         default=True,
-        description="Include detection details in metadata"
+        description="메타데이터에 탐지 상세 정보 포함"
     )
 
-    # Custom patterns
+    # 사용자 정의 패턴
     custom_patterns: List[PIIPattern] = Field(
         default_factory=list,
-        description="Custom PII patterns to detect"
+        description="탐지할 사용자 정의 PII 패턴들"
     )
 
-    # Whitelist configuration
+    # 화이트리스트 설정
     whitelist_patterns: List[str] = Field(
         default_factory=list,
-        description="Patterns to exclude from PII detection"
+        description="PII 탐지에서 제외할 패턴들"
     )
 
 
 class PIIDetector:
-    """Core PII detection logic."""
+    """PII 탐지를 위한 핵심 로직 클래스.
+
+    이 클래스는 텍스트에서 다양한 유형의 PII를 탐지하고
+    적절한 마스킹 전략을 적용하는 기능을 제공합니다.
+    """
 
     def __init__(self, config: PIIFilterConfig):
-        """Initialize the PII detector with configuration.
+        """PII 탐지기를 설정으로 초기화합니다.
 
         Args:
-            config: PII filter configuration
+            config: PII 필터 설정 객체
         """
         self.config = config
+        # PII 유형별로 컴파일된 정규식 패턴들을 저장하는 딕셔너리
         self.patterns: Dict[PIIType, List[Tuple[Pattern, MaskingStrategy]]] = {}
+        # 패턴들을 컴파일하여 준비
         self._compile_patterns()
+        # 화이트리스트 패턴들도 컴파일
         self._compile_whitelist()
 
     def _compile_patterns(self) -> None:
-        """Compile regex patterns for PII detection."""
+        """PII 탐지를 위한 정규식 패턴들을 컴파일합니다.
+
+        설정에서 활성화된 PII 유형에 따라 적절한 정규식 패턴들을
+        생성하고 컴파일하여 탐지 준비를 완료합니다.
+        """
+        # 컴파일할 패턴들을 저장할 리스트
         patterns = []
 
-        # Social Security Number patterns
+        # 사회보장번호 패턴 - 하이픈 포함 형식과 9자리 연속 형식 모두 지원
         if self.config.detect_ssn:
             patterns.append(PIIPattern(
                 type=PIIType.SSN,
                 pattern=r'\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b',
-                description="US Social Security Number",
+                description="미국 사회보장번호",
                 mask_strategy=MaskingStrategy.PARTIAL
             ))
 
-        # Credit Card patterns (basic validation for common formats)
+        # 신용카드 패턴 - 일반적인 16자리 카드 번호 형식 (하이픈이나 공백 포함)
         if self.config.detect_credit_card:
             patterns.append(PIIPattern(
                 type=PIIType.CREDIT_CARD,
                 pattern=r'\b(?:\d{4}[-\s]?){3}\d{4}\b',
-                description="Credit card number",
+                description="신용카드 번호",
                 mask_strategy=MaskingStrategy.PARTIAL
             ))
 
@@ -470,33 +482,47 @@ class PIIDetector:
 
 
 class PIIFilterPlugin(Plugin):
-    """PII Filter plugin for detecting and masking sensitive information."""
+    """민감한 정보를 탐지하고 마스킹하는 PII 필터 플러그인.
+
+    이 플러그인은 프롬프트, 도구 호출, 도구 결과에서 개인 식별 정보(PII)를
+    탐지하고 설정된 마스킹 전략에 따라 정보를 보호합니다.
+    """
 
     def __init__(self, config: PluginConfig):
-        """Initialize the PII filter plugin.
+        """PII 필터 플러그인을 초기화합니다.
 
         Args:
-            config: Plugin configuration
+            config: 플러그인 설정 객체
         """
+        # 부모 클래스 초기화
         super().__init__(config)
+
+        # PII 필터 설정을 검증하고 로드
         self.pii_config = PIIFilterConfig.model_validate(self._config.config)
+
+        # PII 탐지기를 생성하여 패턴들을 컴파일
         self.detector = PIIDetector(self.pii_config)
-        self.detection_count = 0
-        self.masked_count = 0
+
+        # 탐지 및 마스킹 통계 카운터 초기화
+        self.detection_count = 0  # 총 탐지 횟수
+        self.masked_count = 0     # 마스킹된 항목 수
 
     async def prompt_pre_fetch(
         self,
         payload: PromptPrehookPayload,
         context: PluginContext
     ) -> PromptPrehookResult:
-        """Process prompt before retrieval to detect and mask PII.
+        """프롬프트 검색 전 PII를 탐지하고 마스킹하는 메서드.
+
+        프롬프트의 인자들을 검사하여 PII가 포함되어 있는지 확인하고,
+        발견된 경우 설정에 따라 마스킹하거나 요청을 차단합니다.
 
         Args:
-            payload: The prompt payload
-            context: Plugin context
+            payload: 프롬프트 페이로드 (인자들 포함)
+            context: 플러그인 실행 맥락 정보
 
         Returns:
-            Result with masked PII or violation if blocking
+            마스킹된 PII가 포함된 결과 또는 차단을 위한 위반사항
         """
         if not payload.args:
             return PromptPrehookResult()
@@ -976,8 +1002,12 @@ class PIIFilterPlugin(Plugin):
                     self._apply_pii_masking_to_parsed_json(item, current_path, all_detections)
 
     async def shutdown(self) -> None:
-        """Cleanup when plugin shuts down."""
+        """플러그인 종료 시 정리 작업을 수행합니다.
+
+        플러그인이 종료될 때 필요한 정리 작업을 수행하고
+        최종 마스킹 통계를 로그에 기록합니다.
+        """
         logger.info(
-            f"PII Filter plugin shutting down. "
-            f"Total masked: {self.masked_count} items"
+            "PII 필터 플러그인 종료 중. "
+            f"총 마스킹된 항목 수: {self.masked_count}개"
         )

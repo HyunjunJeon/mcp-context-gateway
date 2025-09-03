@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/token_storage_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/token_storage_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-OAuth Token Storage Service for MCP Gateway.
+MCP 게이트웨이를 위한 OAuth 토큰 저장소 서비스
 
-This module handles the storage, retrieval, and management of OAuth access and refresh tokens
-for Authorization Code flow implementations.
+이 모듈은 Authorization Code 플로우 구현을 위한 OAuth 액세스 및 리프레시 토큰의
+저장, 검색, 관리를 처리합니다.
 """
 
 # Standard

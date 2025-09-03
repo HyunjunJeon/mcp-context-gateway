@@ -4,104 +4,105 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Teryl Taylor, Mihai Criveti
 
-Plugin manager.
-Module that manages and calls plugins at hookpoints throughout the gateway.
+플러그인 관리자.
+게이트웨이 전체의 후크 포인트에서 플러그인을 관리하고 호출하는 모듈입니다.
 
-This module provides the core plugin management functionality including:
-- Plugin lifecycle management (initialization, execution, shutdown)
-- Timeout protection for plugin execution
-- Context management with automatic cleanup
-- Priority-based plugin ordering
-- Conditional plugin execution based on prompts/servers/tenants
+이 모듈은 다음과 같은 핵심 플러그인 관리 기능을 제공합니다:
+- 플러그인 라이프사이클 관리 (초기화, 실행, 종료)
+- 플러그인 실행을 위한 타임아웃 보호
+- 자동 정리 기능이 있는 컨텍스트 관리
+- 우선순위 기반 플러그인 순서 지정
+- 프롬프트/서버/테넌트 기반 조건부 플러그인 실행
 
 Examples:
-    >>> # Initialize plugin manager with configuration
+    >>> # 설정으로 플러그인 관리자 초기화
     >>> manager = PluginManager("plugins/config.yaml")
-    >>> # await manager.initialize()  # Called in async context
+    >>> # await manager.initialize()  # 비동기 컨텍스트에서 호출
 
-    >>> # Create test payload and context
+    >>> # 테스트 페이로드 및 컨텍스트 생성
     >>> from mcpgateway.plugins.framework.models import PromptPrehookPayload, GlobalContext
     >>> payload = PromptPrehookPayload(name="test", args={"user": "input"})
     >>> context = GlobalContext(request_id="123")
-    >>> # result, contexts = await manager.prompt_pre_fetch(payload, context)  # Called in async context
+    >>> # result, contexts = await manager.prompt_pre_fetch(payload, context)  # 비동기 컨텍스트에서 호출
 """
 
-# Standard
-import asyncio
-import logging
-import time
-from typing import Any, Callable, Coroutine, Dict, Generic, Optional, Tuple, TypeVar
+# Standard - 표준 라이브러리 import
+import asyncio          # 비동기 작업을 위한 모듈
+import logging          # 로깅을 위한 모듈
+import time             # 시간 관련 작업을 위한 모듈
+from typing import Any, Callable, Coroutine, Dict, Generic, Optional, Tuple, TypeVar  # 타입 힌팅을 위한 모듈들
 
-# First-Party
-from mcpgateway.plugins.framework.base import Plugin, PluginRef
-from mcpgateway.plugins.framework.loader.config import ConfigLoader
-from mcpgateway.plugins.framework.loader.plugin import PluginLoader
+# First-Party - 프로젝트 내부 모듈 import
+from mcpgateway.plugins.framework.base import Plugin, PluginRef  # 기본 플러그인 클래스들
+from mcpgateway.plugins.framework.loader.config import ConfigLoader  # 설정 로더
+from mcpgateway.plugins.framework.loader.plugin import PluginLoader  # 플러그인 로더
 from mcpgateway.plugins.framework.models import (
-    Config,
-    GlobalContext,
-    HookType,
-    PluginCondition,
-    PluginContext,
-    PluginContextTable,
-    PluginMode,
-    PluginResult,
-    PluginViolation,
-    PromptPosthookPayload,
-    PromptPosthookResult,
-    PromptPrehookPayload,
-    PromptPrehookResult,
-    ResourcePostFetchPayload,
-    ResourcePostFetchResult,
-    ResourcePreFetchPayload,
-    ResourcePreFetchResult,
-    ToolPostInvokePayload,
-    ToolPostInvokeResult,
-    ToolPreInvokePayload,
-    ToolPreInvokeResult,
+    Config,                    # 설정 모델
+    GlobalContext,             # 전역 컨텍스트
+    HookType,                  # 후크 타입
+    PluginCondition,           # 플러그인 조건
+    PluginContext,             # 플러그인 컨텍스트
+    PluginContextTable,        # 플러그인 컨텍스트 테이블
+    PluginMode,                # 플러그인 모드
+    PluginResult,              # 플러그인 결과
+    PluginViolation,           # 플러그인 위반사항
+    PromptPosthookPayload,     # 프롬프트 사후 후크 페이로드
+    PromptPosthookResult,      # 프롬프트 사후 후크 결과
+    PromptPrehookPayload,      # 프롬프트 사전 후크 페이로드
+    PromptPrehookResult,       # 프롬프트 사전 후크 결과
+    ResourcePostFetchPayload,  # 리소스 사후 페치 페이로드
+    ResourcePostFetchResult,   # 리소스 사후 페치 결과
+    ResourcePreFetchPayload,   # 리소스 사전 페치 페이로드
+    ResourcePreFetchResult,    # 리소스 사전 페치 결과
+    ToolPostInvokePayload,     # 도구 사후 호출 페이로드
+    ToolPostInvokeResult,      # 도구 사후 호출 결과
+    ToolPreInvokePayload,      # 도구 사전 호출 페이로드
+    ToolPreInvokeResult,       # 도구 사전 호출 결과
 )
-from mcpgateway.plugins.framework.registry import PluginInstanceRegistry
+from mcpgateway.plugins.framework.registry import PluginInstanceRegistry  # 플러그인 인스턴스 레지스트리
 from mcpgateway.plugins.framework.utils import (
-    post_prompt_matches,
-    post_resource_matches,
-    post_tool_matches,
-    pre_prompt_matches,
-    pre_resource_matches,
-    pre_tool_matches,
+    post_prompt_matches,       # 프롬프트 사후 매칭 함수
+    post_resource_matches,     # 리소스 사후 매칭 함수
+    post_tool_matches,         # 도구 사후 매칭 함수
+    pre_prompt_matches,        # 프롬프트 사전 매칭 함수
+    pre_resource_matches,      # 리소스 사전 매칭 함수
+    pre_tool_matches,          # 도구 사전 매칭 함수
 )
 
-# Use standard logging to avoid circular imports (plugins -> services -> plugins)
+# 순환 import를 방지하기 위해 표준 logging 사용 (plugins -> services -> plugins)
 logger = logging.getLogger(__name__)
 
+# 제네릭 타입 변수
 T = TypeVar("T")
 
-# Configuration constants
-DEFAULT_PLUGIN_TIMEOUT = 30  # seconds
-MAX_PAYLOAD_SIZE = 1_000_000  # 1MB
-CONTEXT_CLEANUP_INTERVAL = 300  # 5 minutes
-CONTEXT_MAX_AGE = 3600  # 1 hour
+# 설정 상수들
+DEFAULT_PLUGIN_TIMEOUT = 30        # 기본 플러그인 타임아웃 (초)
+MAX_PAYLOAD_SIZE = 1_000_000       # 최대 페이로드 크기 (1MB)
+CONTEXT_CLEANUP_INTERVAL = 300     # 컨텍스트 정리 간격 (5분)
+CONTEXT_MAX_AGE = 3600             # 컨텍스트 최대 유지 시간 (1시간)
 
 
 class PluginTimeoutError(Exception):
-    """Raised when a plugin execution exceeds the timeout limit."""
+    """플러그인 실행이 타임아웃 제한을 초과할 때 발생하는 예외."""
 
 
 class PayloadSizeError(ValueError):
-    """Raised when a payload exceeds the maximum allowed size."""
+    """페이로드가 허용된 최대 크기를 초과할 때 발생하는 예외."""
 
 
 class PluginExecutor(Generic[T]):
-    """Executes a list of plugins with timeout protection and error handling.
+    """타임아웃 보호 및 오류 처리를 통해 플러그인 목록을 실행합니다.
 
-    This class manages the execution of plugins in priority order, handling:
-    - Timeout protection for each plugin
-    - Context management between plugins
-    - Error isolation to prevent plugin failures from affecting the gateway
-    - Metadata aggregation from multiple plugins
+    이 클래스는 우선순위 순서대로 플러그인을 실행하며 다음과 같은 기능을 처리합니다:
+    - 각 플러그인에 대한 타임아웃 보호
+    - 플러그인 간 컨텍스트 관리
+    - 플러그인 실패가 게이트웨이에 영향을 미치지 않도록 하는 오류 격리
+    - 여러 플러그인으로부터의 메타데이터 집계
 
     Examples:
         >>> from mcpgateway.plugins.framework import PromptPrehookPayload
         >>> executor = PluginExecutor[PromptPrehookPayload]()
-        >>> # In async context:
+        >>> # 비동기 컨텍스트에서:
         >>> # result, contexts = await executor.execute(
         >>> #     plugins=[plugin1, plugin2],
         >>> #     payload=payload,
@@ -112,11 +113,12 @@ class PluginExecutor(Generic[T]):
     """
 
     def __init__(self, timeout: int = DEFAULT_PLUGIN_TIMEOUT):
-        """Initialize the plugin executor.
+        """플러그인 실행자를 초기화합니다.
 
         Args:
-            timeout: Maximum execution time per plugin in seconds.
+            timeout: 각 플러그인의 최대 실행 시간 (초).
         """
+        # 타임아웃 설정 저장
         self.timeout = timeout
 
     async def execute(
@@ -128,31 +130,31 @@ class PluginExecutor(Generic[T]):
         compare: Callable[[T, list[PluginCondition], GlobalContext], bool],
         local_contexts: Optional[PluginContextTable] = None,
     ) -> tuple[PluginResult[T], PluginContextTable | None]:
-        """Execute plugins in priority order with timeout protection.
+        """타임아웃 보호를 통해 우선순위 순서대로 플러그인을 실행합니다.
 
         Args:
-            plugins: List of plugins to execute, sorted by priority.
-            payload: The payload to be processed by plugins.
-            global_context: Shared context for all plugins containing request metadata.
-            plugin_run: Async function to execute a specific plugin hook.
-            compare: Function to check if plugin conditions match the current context.
-            local_contexts: Optional existing contexts from previous hook executions.
+            plugins: 우선순위별로 정렬된 실행할 플러그인 목록
+            payload: 플러그인들이 처리할 페이로드
+            global_context: 모든 플러그인에 대한 요청 메타데이터를 포함하는 공유 컨텍스트
+            plugin_run: 특정 플러그인 후크를 실행하는 비동기 함수
+            compare: 플러그인 조건이 현재 컨텍스트와 일치하는지 확인하는 함수
+            local_contexts: 이전 후크 실행으로부터의 기존 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - PluginResult with processing status, modified payload, and metadata
-            - PluginContextTable with updated local contexts for each plugin
+            튜플로 구성된 결과:
+            - 처리 상태, 수정된 페이로드, 메타데이터를 포함하는 PluginResult
+            - 각 플러그인에 대한 업데이트된 로컬 컨텍스트를 포함하는 PluginContextTable
 
         Raises:
-            PayloadSizeError: If the payload exceeds MAX_PAYLOAD_SIZE.
+            PayloadSizeError: 페이로드가 MAX_PAYLOAD_SIZE를 초과하는 경우
 
         Examples:
-            >>> # Execute plugins with timeout protection
+            >>> # 타임아웃 보호를 통해 플러그인 실행
             >>> from mcpgateway.plugins.framework import HookType
             >>> executor = PluginExecutor(timeout=30)
-            >>> # Assuming you have a registry instance:
+            >>> # 레지스트리 인스턴스가 있다고 가정:
             >>> # plugins = registry.get_plugins_for_hook(HookType.PROMPT_PRE_FETCH)
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # result, contexts = await executor.execute(
             >>> #     plugins=plugins,
             >>> #     payload=PromptPrehookPayload(name="test", args={}),
@@ -161,10 +163,11 @@ class PluginExecutor(Generic[T]):
             >>> #     compare=pre_prompt_matches
             >>> # )
         """
+        # 플러그인이 없는 경우 빈 결과 반환
         if not plugins:
             return (PluginResult[T](modified_payload=None), None)
 
-        # Validate payload size
+        # 페이로드 크기 검증
         self._validate_payload_size(payload)
 
         res_local_contexts = {}
@@ -422,35 +425,35 @@ async def post_resource_fetch(plugin: PluginRef, payload: ResourcePostFetchPaylo
 
 
 class PluginManager:
-    """Plugin manager for managing the plugin lifecycle.
+    """플러그인 라이프사이클을 관리하는 플러그인 관리자.
 
-    This class implements a singleton pattern to ensure consistent plugin
-    management across the application. It handles:
-    - Plugin discovery and loading from configuration
-    - Plugin lifecycle management (initialization, execution, shutdown)
-    - Context management with automatic cleanup
-    - Hook execution orchestration
+    이 클래스는 애플리케이션 전체에서 일관된 플러그인 관리를 보장하기 위해
+    싱글톤 패턴을 구현합니다. 다음과 같은 기능을 처리합니다:
+    - 설정으로부터의 플러그인 검색 및 로딩
+    - 플러그인 라이프사이클 관리 (초기화, 실행, 종료)
+    - 자동 정리 기능이 있는 컨텍스트 관리
+    - 후크 실행 오케스트레이션
 
     Attributes:
-        config: The loaded plugin configuration.
-        plugin_count: Number of currently loaded plugins.
-        initialized: Whether the manager has been initialized.
+        config: 로드된 플러그인 설정
+        plugin_count: 현재 로드된 플러그인의 수
+        initialized: 관리자가 초기화되었는지 여부
 
     Examples:
-        >>> # Initialize plugin manager
+        >>> # 플러그인 관리자 초기화
         >>> manager = PluginManager("plugins/config.yaml")
-        >>> # In async context:
+        >>> # 비동기 컨텍스트에서:
         >>> # await manager.initialize()
-        >>> # print(f"Loaded {manager.plugin_count} plugins")
+        >>> # print(f"로드된 플러그인 수: {manager.plugin_count}")
         >>>
-        >>> # Execute prompt hooks
+        >>> # 프롬프트 후크 실행
         >>> from mcpgateway.plugins.framework import PromptPrehookPayload, GlobalContext
         >>> payload = PromptPrehookPayload(name="test", args={})
         >>> context = GlobalContext(request_id="req-123")
-        >>> # In async context:
+        >>> # 비동기 컨텍스트에서:
         >>> # result, contexts = await manager.prompt_pre_fetch(payload, context)
         >>>
-        >>> # Shutdown when done
+        >>> # 완료 시 종료
         >>> # await manager.shutdown()
     """
 
@@ -471,24 +474,27 @@ class PluginManager:
     _last_cleanup: float = 0
 
     def __init__(self, config: str = "", timeout: int = DEFAULT_PLUGIN_TIMEOUT):
-        """Initialize plugin manager.
+        """플러그인 관리자를 초기화합니다.
 
         Args:
-            config: Path to plugin configuration file (YAML).
-            timeout: Maximum execution time per plugin in seconds.
+            config: 플러그인 설정 파일 경로 (YAML)
+            timeout: 각 플러그인의 최대 실행 시간 (초)
 
         Examples:
-            >>> # Initialize with configuration file
+            >>> # 설정 파일로 초기화
             >>> manager = PluginManager("plugins/config.yaml")
 
-            >>> # Initialize with custom timeout
+            >>> # 사용자 정의 타임아웃으로 초기화
             >>> manager = PluginManager("plugins/config.yaml", timeout=60)
         """
+        # 싱글톤 패턴을 위한 공유 상태 설정
         self.__dict__ = self.__shared_state
+
+        # 설정 파일이 제공된 경우 로드
         if config:
             self._config = ConfigLoader.load_config(config)
 
-        # Update executor timeouts
+        # 모든 실행자의 타임아웃 업데이트
         self._pre_prompt_executor.timeout = timeout
         self._post_prompt_executor.timeout = timeout
         self._pre_tool_executor.timeout = timeout
@@ -496,143 +502,149 @@ class PluginManager:
         self._resource_pre_executor.timeout = timeout
         self._resource_post_executor.timeout = timeout
 
-        # Initialize context tracking if not already done
+        # 컨텍스트 추적이 아직 초기화되지 않은 경우 초기화
         if not hasattr(self, "_context_store"):
             self._context_store = {}
             self._last_cleanup = time.time()
 
     @property
     def config(self) -> Config | None:
-        """Plugin manager configuration.
+        """플러그인 관리자 설정.
 
         Returns:
-            The plugin configuration object or None if not configured.
+            설정되지 않은 경우 플러그인 설정 객체 또는 None
         """
         return self._config
 
     @property
     def plugin_count(self) -> int:
-        """Number of plugins loaded.
+        """로드된 플러그인의 수.
 
         Returns:
-            The number of currently loaded plugins.
+            현재 로드된 플러그인의 수
         """
         return self._registry.plugin_count
 
     @property
     def initialized(self) -> bool:
-        """Plugin manager initialization status.
+        """플러그인 관리자 초기화 상태.
 
         Returns:
-            True if the plugin manager has been initialized.
+            플러그인 관리자가 초기화된 경우 True
         """
         return self._initialized
 
     def get_plugin(self, name: str) -> Optional[Plugin]:
-        """Get a plugin by name.
+        """이름으로 플러그인을 검색합니다.
 
         Args:
-            name: the name of the plugin to return.
+            name: 반환할 플러그인의 이름
 
         Returns:
-            A plugin.
+            플러그인 객체
         """
         plugin_ref = self._registry.get_plugin(name)
         return plugin_ref.plugin if plugin_ref else None
 
     async def initialize(self) -> None:
-        """Initialize the plugin manager and load all configured plugins.
+        """플러그인 관리자를 초기화하고 설정된 모든 플러그인을 로드합니다.
 
-        This method:
-        1. Loads plugin configurations from the config file
-        2. Instantiates each enabled plugin
-        3. Registers plugins with the registry
-        4. Validates plugin initialization
+        이 메서드는 다음을 수행합니다:
+        1. 설정 파일에서 플러그인 설정들을 로드
+        2. 활성화된 각 플러그인을 인스턴스화
+        3. 레지스트리에 플러그인들을 등록
+        4. 플러그인 초기화를 검증
 
         Raises:
-            ValueError: If a plugin cannot be initialized or registered.
+            ValueError: 플러그인이 초기화되거나 등록될 수 없는 경우
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
-            >>> # Manager is now ready to execute plugins
+            >>> # 이제 플러그인을 실행할 준비가 되었습니다
         """
+        # 이미 초기화된 경우 조용히 리턴
         if self._initialized:
-            logger.debug("Plugin manager already initialized")
+            logger.debug("플러그인 관리자가 이미 초기화되었습니다")
             return
 
+        # 설정에서 플러그인들 가져오기
         plugins = self._config.plugins if self._config and self._config.plugins else []
         loaded_count = 0
 
+        # 각 플러그인을 로드하고 인스턴스화
         for plugin_config in plugins:
             if plugin_config.mode != PluginMode.DISABLED:
                 try:
+                    # 플러그인 로드 및 인스턴스화
                     plugin = await self._loader.load_and_instantiate_plugin(plugin_config)
                     if plugin:
+                        # 레지스트리에 등록
                         self._registry.register(plugin)
                         loaded_count += 1
-                        logger.info(f"Loaded plugin: {plugin_config.name} (mode: {plugin_config.mode})")
+                        logger.info(f"플러그인 로드됨: {plugin_config.name} (모드: {plugin_config.mode})")
                     else:
-                        raise ValueError(f"Unable to instantiate plugin: {plugin_config.name}")
+                        raise ValueError(f"플러그인을 인스턴스화할 수 없습니다: {plugin_config.name}")
                 except Exception as e:
-                    logger.error(f"Failed to load plugin {plugin_config.name}: {str(e)}")
-                    raise ValueError(f"Unable to register and initialize plugin: {plugin_config.name}") from e
+                    logger.error(f"플러그인 로드 실패 {plugin_config.name}: {str(e)}")
+                    raise ValueError(f"플러그인을 등록하고 초기화할 수 없습니다: {plugin_config.name}") from e
             else:
-                logger.debug(f"Skipping disabled plugin: {plugin_config.name}")
+                logger.debug(f"비활성화된 플러그인 건너뜀: {plugin_config.name}")
 
+        # 초기화 완료 표시
         self._initialized = True
-        logger.info(f"Plugin manager initialized with {loaded_count} plugins")
+        logger.info(f"플러그인 관리자가 {loaded_count}개의 플러그인으로 초기화되었습니다")
 
     async def shutdown(self) -> None:
-        """Shutdown all plugins and cleanup resources.
+        """모든 플러그인을 종료하고 리소스를 정리합니다.
 
-        This method:
-        1. Shuts down all registered plugins
-        2. Clears the plugin registry
-        3. Cleans up stored contexts
-        4. Resets initialization state
+        이 메서드는 다음을 수행합니다:
+        1. 등록된 모든 플러그인을 종료
+        2. 플러그인 레지스트리를 정리
+        3. 저장된 컨텍스트들을 정리
+        4. 초기화 상태를 재설정
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
-            >>> # ... use the manager ...
+            >>> # ... 관리자 사용 ...
             >>> # await manager.shutdown()
         """
-        logger.info("Shutting down plugin manager")
+        logger.info("플러그인 관리자를 종료합니다")
 
-        # Shutdown all plugins
+        # 모든 플러그인 종료
         await self._registry.shutdown()
 
-        # Clear context store
+        # 컨텍스트 저장소 정리
         self._context_store.clear()
 
-        # Reset state
+        # 상태 재설정
         self._initialized = False
-        logger.info("Plugin manager shutdown complete")
+        logger.info("플러그인 관리자 종료 완료")
 
     async def _cleanup_old_contexts(self) -> None:
-        """Remove contexts older than CONTEXT_MAX_AGE to prevent memory leaks.
+        """메모리 누수를 방지하기 위해 CONTEXT_MAX_AGE보다 오래된 컨텍스트들을 제거합니다.
 
-        This method is called periodically during hook execution to clean up
-        stale contexts that are no longer needed.
+        이 메서드는 후크 실행 중에 주기적으로 호출되어 더 이상 필요하지 않은
+        오래된 컨텍스트들을 정리합니다.
         """
         current_time = time.time()
 
-        # Only cleanup every CONTEXT_CLEANUP_INTERVAL seconds
+        # CONTEXT_CLEANUP_INTERVAL 초마다 정리
         if current_time - self._last_cleanup < CONTEXT_CLEANUP_INTERVAL:
             return
 
-        # Find expired contexts
+        # 만료된 컨텍스트 찾기
         expired_keys = [key for key, (_, timestamp) in self._context_store.items() if current_time - timestamp > CONTEXT_MAX_AGE]
 
-        # Remove expired contexts
+        # 만료된 컨텍스트 제거
         for key in expired_keys:
             del self._context_store[key]
 
         if expired_keys:
-            logger.info(f"Cleaned up {len(expired_keys)} expired plugin contexts")
+            logger.info(f"만료된 플러그인 컨텍스트 {len(expired_keys)}개를 정리했습니다")
 
         self._last_cleanup = current_time
 
@@ -642,24 +654,24 @@ class PluginManager:
         global_context: GlobalContext,
         local_contexts: Optional[PluginContextTable] = None,
     ) -> tuple[PromptPrehookResult, PluginContextTable | None]:
-        """Execute pre-fetch hooks before a prompt is retrieved and rendered.
+        """프롬프트가 검색되고 렌더링되기 전에 사전 페치 후크를 실행합니다.
 
         Args:
-            payload: The prompt payload containing name and arguments.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional existing contexts from previous executions.
+            payload: 이름과 인자를 포함하는 프롬프트 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 이전 실행으로부터의 기존 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - PromptPrehookResult with processing status and modified payload
-            - PluginContextTable with updated contexts for post-fetch hook
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 페이로드를 포함하는 PromptPrehookResult
+            - 사후 페치 후크를 위한 업데이트된 컨텍스트를 포함하는 PluginContextTable
 
         Raises:
-            PayloadSizeError: If payload exceeds size limits.
+            PayloadSizeError: 페이로드가 크기 제한을 초과하는 경우
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
             >>>
             >>> from mcpgateway.plugins.framework import PromptPrehookPayload, GlobalContext
@@ -672,22 +684,22 @@ class PluginManager:
             ...     user="alice@example.com"
             ... )
             >>>
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # result, contexts = await manager.prompt_pre_fetch(payload, context)
             >>> # if result.continue_processing:
-            >>> #     # Proceed with prompt processing
+            >>> #     # 프롬프트 처리 진행
             >>> #     modified_payload = result.modified_payload or payload
         """
-        # Cleanup old contexts periodically
+        # 주기적으로 오래된 컨텍스트 정리
         await self._cleanup_old_contexts()
 
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.PROMPT_PRE_FETCH)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._pre_prompt_executor.execute(plugins, payload, global_context, pre_prompt_fetch, pre_prompt_matches, local_contexts)
 
-        # Store contexts for potential reuse
+        # 잠재적 재사용을 위해 컨텍스트 저장
         if result[1]:
             self._context_store[global_context.request_id] = (result[1], time.time())
 
@@ -696,27 +708,27 @@ class PluginManager:
     async def prompt_post_fetch(
         self, payload: PromptPosthookPayload, global_context: GlobalContext, local_contexts: Optional[PluginContextTable] = None
     ) -> tuple[PromptPosthookResult, PluginContextTable | None]:
-        """Execute post-fetch hooks after a prompt is rendered.
+        """프롬프트가 렌더링된 후 사후 페치 후크를 실행합니다.
 
         Args:
-            payload: The prompt result payload containing rendered messages.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional contexts from pre-fetch hook execution.
+            payload: 렌더링된 메시지를 포함하는 프롬프트 결과 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 사전 페치 후크 실행으로부터의 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - PromptPosthookResult with processing status and modified result
-            - PluginContextTable with final contexts
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 결과를 포함하는 PromptPosthookResult
+            - 최종 컨텍스트를 포함하는 PluginContextTable
 
         Raises:
-            PayloadSizeError: If payload exceeds size limits.
+            PayloadSizeError: 페이로드가 크기 제한을 초과하는 경우
 
         Examples:
-            >>> # Continuing from prompt_pre_fetch example
+            >>> # prompt_pre_fetch 예제에서 계속
             >>> from mcpgateway.models import PromptResult, Message, TextContent, Role
             >>> from mcpgateway.plugins.framework import PromptPosthookPayload, GlobalContext
             >>>
-            >>> # Create a proper Message with TextContent
+            >>> # TextContent를 포함하는 적절한 Message 생성
             >>> message = Message(
             ...     role=Role.USER,
             ...     content=TextContent(type="text", text="Hello")
@@ -731,23 +743,23 @@ class PluginManager:
             >>> manager = PluginManager("plugins/config.yaml")
             >>> context = GlobalContext(request_id="req-123")
             >>>
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # result, _ = await manager.prompt_post_fetch(
             >>> #     post_payload,
             >>> #     context,
-            >>> #     contexts  # From pre_fetch
+            >>> #     contexts  # 사전 페치로부터
             >>> # )
             >>> # if result.modified_payload:
-            >>> #     # Use modified result
+            >>> #     # 수정된 결과 사용
             >>> #     final_result = result.modified_payload.result
         """
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.PROMPT_POST_FETCH)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._post_prompt_executor.execute(plugins, payload, global_context, post_prompt_fetch, post_prompt_matches, local_contexts)
 
-        # Clean up stored context after post-fetch
+        # 사후 페치 후 저장된 컨텍스트 정리
         if global_context.request_id in self._context_store:
             del self._context_store[global_context.request_id]
 
@@ -759,24 +771,24 @@ class PluginManager:
         global_context: GlobalContext,
         local_contexts: Optional[PluginContextTable] = None,
     ) -> tuple[ToolPreInvokeResult, PluginContextTable | None]:
-        """Execute pre-invoke hooks before a tool is invoked.
+        """도구가 호출되기 전에 사전 호출 후크를 실행합니다.
 
         Args:
-            payload: The tool payload containing name and arguments.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional existing contexts from previous executions.
+            payload: 이름과 인자를 포함하는 도구 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 이전 실행으로부터의 기존 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - ToolPreInvokeResult with processing status and modified payload
-            - PluginContextTable with updated contexts for post-invoke hook
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 페이로드를 포함하는 ToolPreInvokeResult
+            - 사후 호출 후크를 위한 업데이트된 컨텍스트를 포함하는 PluginContextTable
 
         Raises:
-            PayloadSizeError: If payload exceeds size limits.
+            PayloadSizeError: 페이로드가 크기 제한을 초과하는 경우
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
             >>>
             >>> from mcpgateway.plugins.framework import ToolPreInvokePayload, GlobalContext
@@ -789,22 +801,22 @@ class PluginManager:
             ...     user="alice@example.com"
             ... )
             >>>
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # result, contexts = await manager.tool_pre_invoke(payload, context)
             >>> # if result.continue_processing:
-            >>> #     # Proceed with tool invocation
+            >>> #     # 도구 호출 진행
             >>> #     modified_payload = result.modified_payload or payload
         """
-        # Cleanup old contexts periodically
+        # 주기적으로 오래된 컨텍스트 정리
         await self._cleanup_old_contexts()
 
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.TOOL_PRE_INVOKE)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._pre_tool_executor.execute(plugins, payload, global_context, pre_tool_invoke, pre_tool_matches, local_contexts)
 
-        # Store contexts for potential reuse
+        # 잠재적 재사용을 위해 컨텍스트 저장
         if result[1]:
             self._context_store[global_context.request_id] = (result[1], time.time())
 
@@ -813,23 +825,23 @@ class PluginManager:
     async def tool_post_invoke(
         self, payload: ToolPostInvokePayload, global_context: GlobalContext, local_contexts: Optional[PluginContextTable] = None
     ) -> tuple[ToolPostInvokeResult, PluginContextTable | None]:
-        """Execute post-invoke hooks after a tool is invoked.
+        """도구가 호출된 후 사후 호출 후크를 실행합니다.
 
         Args:
-            payload: The tool result payload containing invocation results.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional contexts from pre-invoke hook execution.
+            payload: 호출 결과를 포함하는 도구 결과 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 사전 호출 후크 실행으로부터의 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - ToolPostInvokeResult with processing status and modified result
-            - PluginContextTable with final contexts
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 결과를 포함하는 ToolPostInvokeResult
+            - 최종 컨텍스트를 포함하는 PluginContextTable
 
         Raises:
-            PayloadSizeError: If payload exceeds size limits.
+            PayloadSizeError: 페이로드가 크기 제한을 초과하는 경우
 
         Examples:
-            >>> # Continuing from tool_pre_invoke example
+            >>> # tool_pre_invoke 예제에서 계속
             >>> from mcpgateway.plugins.framework import ToolPostInvokePayload, GlobalContext
             >>>
             >>> post_payload = ToolPostInvokePayload(
@@ -840,23 +852,23 @@ class PluginManager:
             >>> manager = PluginManager("plugins/config.yaml")
             >>> context = GlobalContext(request_id="req-123")
             >>>
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # result, _ = await manager.tool_post_invoke(
             >>> #     post_payload,
             >>> #     context,
-            >>> #     contexts  # From pre_invoke
+            >>> #     contexts  # 사전 호출로부터
             >>> # )
             >>> # if result.modified_payload:
-            >>> #     # Use modified result
+            >>> #     # 수정된 결과 사용
             >>> #     final_result = result.modified_payload.result
         """
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.TOOL_POST_INVOKE)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._post_tool_executor.execute(plugins, payload, global_context, post_tool_invoke, post_tool_matches, local_contexts)
 
-        # Clean up stored context after post-invoke
+        # 사후 호출 후 저장된 컨텍스트 정리
         if global_context.request_id in self._context_store:
             del self._context_store[global_context.request_id]
 
@@ -868,40 +880,40 @@ class PluginManager:
         global_context: GlobalContext,
         local_contexts: Optional[PluginContextTable] = None,
     ) -> tuple[ResourcePreFetchResult, PluginContextTable | None]:
-        """Execute pre-fetch hooks before a resource is fetched.
+        """리소스가 페치되기 전에 사전 페치 후크를 실행합니다.
 
         Args:
-            payload: The resource payload containing URI and metadata.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional existing contexts from previous hook executions.
+            payload: URI와 메타데이터를 포함하는 리소스 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 이전 후크 실행으로부터의 기존 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - ResourcePreFetchResult with processing status and modified payload
-            - PluginContextTable with plugin contexts for state management
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 페이로드를 포함하는 ResourcePreFetchResult
+            - 상태 관리를 위한 플러그인 컨텍스트를 포함하는 PluginContextTable
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
             >>> # payload = ResourcePreFetchPayload("file:///data.txt")
             >>> # context = GlobalContext(request_id="123", server_id="srv1")
             >>> # result, contexts = await manager.resource_pre_fetch(payload, context)
             >>> # if result.continue_processing:
-            >>> #     # Use modified payload
+            >>> #     # 수정된 페이로드 사용
             >>> #     uri = result.modified_payload.uri
         """
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.RESOURCE_PRE_FETCH)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._resource_pre_executor.execute(plugins, payload, global_context, pre_resource_fetch, pre_resource_matches, local_contexts)
 
-        # Store context for potential post-fetch
+        # 잠재적 사후 페치를 위해 컨텍스트 저장
         if result[1]:
             self._context_store[global_context.request_id] = (result[1], time.time())
 
-        # Periodic cleanup
+        # 주기적 정리
         await self._cleanup_old_contexts()
 
         return result
@@ -909,39 +921,39 @@ class PluginManager:
     async def resource_post_fetch(
         self, payload: ResourcePostFetchPayload, global_context: GlobalContext, local_contexts: Optional[PluginContextTable] = None
     ) -> tuple[ResourcePostFetchResult, PluginContextTable | None]:
-        """Execute post-fetch hooks after a resource is fetched.
+        """리소스가 페치된 후 사후 페치 후크를 실행합니다.
 
         Args:
-            payload: The resource content payload containing fetched data.
-            global_context: Shared context for all plugins with request metadata.
-            local_contexts: Optional contexts from pre-fetch hook execution.
+            payload: 페치된 데이터를 포함하는 리소스 콘텐츠 페이로드
+            global_context: 요청 메타데이터를 포함하는 모든 플러그인을 위한 공유 컨텍스트
+            local_contexts: 사전 페치 후크 실행으로부터의 컨텍스트들 (선택사항)
 
         Returns:
-            A tuple containing:
-            - ResourcePostFetchResult with processing status and modified content
-            - PluginContextTable with updated plugin contexts
+            튜플로 구성된 결과:
+            - 처리 상태와 수정된 콘텐츠를 포함하는 ResourcePostFetchResult
+            - 업데이트된 플러그인 컨텍스트를 포함하는 PluginContextTable
 
         Examples:
             >>> manager = PluginManager("plugins/config.yaml")
-            >>> # In async context:
+            >>> # 비동기 컨텍스트에서:
             >>> # await manager.initialize()
             >>> # from mcpgateway.models import ResourceContent
             >>> # content = ResourceContent(type="resource", uri="file:///data.txt", text="Data")
             >>> # payload = ResourcePostFetchPayload("file:///data.txt", content)
             >>> # context = GlobalContext(request_id="123", server_id="srv1")
-            >>> # contexts = self._context_store.get("123")  # From pre-fetch
+            >>> # contexts = self._context_store.get("123")  # 사전 페치로부터
             >>> # result, _ = await manager.resource_post_fetch(payload, context, contexts)
             >>> # if result.continue_processing:
-            >>> #     # Use modified result
+            >>> #     # 수정된 결과 사용
             >>> #     final_content = result.modified_payload.content
         """
-        # Get plugins configured for this hook
+        # 이 후크에 대해 설정된 플러그인들 가져오기
         plugins = self._registry.get_plugins_for_hook(HookType.RESOURCE_POST_FETCH)
 
-        # Execute plugins
+        # 플러그인들 실행
         result = await self._resource_post_executor.execute(plugins, payload, global_context, post_resource_fetch, post_resource_matches, local_contexts)
 
-        # Clean up stored context after post-fetch
+        # 사후 페치 후 저장된 컨텍스트 정리
         if global_context.request_id in self._context_store:
             del self._context_store[global_context.request_id]
 

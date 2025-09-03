@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/completion_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/completion_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Completion Service Implementation.
-This module implements argument completion according to the MCP specification.
-It handles completion suggestions for prompt arguments and resource URIs.
+자동 완성 서비스 구현 모듈
 
-Examples:
+MCP 사양에 따라 인자 자동 완성 기능을 구현합니다.
+프롬프트 인자와 리소스 URI에 대한 자동 완성 제안을 처리합니다.
+
+예시:
     >>> from mcpgateway.services.completion_service import CompletionService, CompletionError
     >>> service = CompletionService()
     >>> isinstance(service, CompletionService)
@@ -17,28 +18,28 @@ Examples:
     {}
 """
 
-# Standard
+# 표준 라이브러리 임포트
 from typing import Any, Dict, List
 
-# Third-Party
+# 서드파티 라이브러리 임포트
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.db import Prompt as DbPrompt
 from mcpgateway.db import Resource as DbResource
 from mcpgateway.models import CompleteResult
 from mcpgateway.services.logging_service import LoggingService
 
-# Initialize logging service first
+# 로깅 서비스 초기화
 logging_service = LoggingService()
 logger = logging_service.get_logger(__name__)
 
 
 class CompletionError(Exception):
-    """Base class for completion errors.
+    """자동 완성 관련 오류들의 기본 클래스입니다.
 
-    Examples:
+    예시:
         >>> from mcpgateway.services.completion_service import CompletionError
         >>> err = CompletionError("Invalid reference")
         >>> str(err)
@@ -49,18 +50,18 @@ class CompletionError(Exception):
 
 
 class CompletionService:
-    """MCP completion service.
+    """MCP 자동 완성 서비스 클래스입니다.
 
-    Handles argument completion for:
-    - Prompt arguments based on schema
-    - Resource URIs with templates
-    - Custom completion sources
+    다음 항목들에 대한 인자 자동 완성을 처리합니다:
+    - 스키마 기반 프롬프트 인자
+    - 템플릿을 사용한 리소스 URI
+    - 사용자 정의 자동 완성 소스
     """
 
     def __init__(self):
-        """Initialize completion service.
+        """자동 완성 서비스를 초기화합니다.
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService
             >>> service = CompletionService()
             >>> hasattr(service, '_custom_completions')
@@ -68,31 +69,33 @@ class CompletionService:
             >>> service._custom_completions
             {}
         """
+        # 사용자 정의 자동 완성 값들을 저장하는 딕셔너리
         self._custom_completions: Dict[str, List[str]] = {}
 
     async def initialize(self) -> None:
-        """Initialize completion service."""
-        logger.info("Initializing completion service")
+        """자동 완성 서비스를 초기화합니다."""
+        logger.info("자동 완성 서비스 초기화 중")
 
     async def shutdown(self) -> None:
-        """Shutdown completion service."""
-        logger.info("Shutting down completion service")
+        """자동 완성 서비스를 종료하고 리소스를 정리합니다."""
+        logger.info("자동 완성 서비스 종료 중")
+        # 사용자 정의 자동 완성 데이터 정리
         self._custom_completions.clear()
 
     async def handle_completion(self, db: Session, request: Dict[str, Any]) -> CompleteResult:
-        """Handle completion request.
+        """자동 완성 요청을 처리합니다.
 
         Args:
-            db: Database session
-            request: Completion request
+            db: 데이터베이스 세션
+            request: 자동 완성 요청 데이터
 
         Returns:
-            Completion result with suggestions
+            제안사항이 포함된 자동 완성 결과
 
         Raises:
-            CompletionError: If completion fails
+            CompletionError: 자동 완성 처리 실패 시
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService
             >>> from unittest.mock import MagicMock
             >>> service = CompletionService()
@@ -106,53 +109,57 @@ class CompletionService:
             ...     pass
         """
         try:
-            # Get reference and argument info
+            # 요청에서 참조 정보와 인자 정보를 추출
             ref = request.get("ref", {})
             ref_type = ref.get("type")
             arg = request.get("argument", {})
             arg_name = arg.get("name")
             arg_value = arg.get("value", "")
 
+            # 필수 정보가 없는 경우 오류 발생
             if not ref_type or not arg_name:
-                raise CompletionError("Missing reference type or argument name")
+                raise CompletionError("참조 타입 또는 인자 이름이 누락되었습니다")
 
-            # Handle different reference types
+            # 참조 타입에 따라 적절한 자동 완성 처리
             if ref_type == "ref/prompt":
+                # 프롬프트 인자 자동 완성
                 result = await self._complete_prompt_argument(db, ref, arg_name, arg_value)
             elif ref_type == "ref/resource":
+                # 리소스 URI 자동 완성
                 result = await self._complete_resource_uri(db, ref, arg_value)
             else:
-                raise CompletionError(f"Invalid reference type: {ref_type}")
+                # 지원하지 않는 참조 타입
+                raise CompletionError(f"유효하지 않은 참조 타입: {ref_type}")
 
             return result
 
         except Exception as e:
-            logger.error(f"Completion error: {e}")
+            logger.error(f"자동 완성 오류: {e}")
             raise CompletionError(str(e))
 
     async def _complete_prompt_argument(self, db: Session, ref: Dict[str, Any], arg_name: str, arg_value: str) -> CompleteResult:
-        """Complete prompt argument value.
+        """프롬프트 인자 값을 자동 완성합니다.
 
         Args:
-            db: Database session
-            ref: Prompt reference
-            arg_name: Argument name
-            arg_value: Current argument value
+            db: 데이터베이스 세션
+            ref: 프롬프트 참조 정보
+            arg_name: 인자 이름
+            arg_value: 현재 인자 값
 
         Returns:
-            Completion suggestions
+            자동 완성 제안사항들
 
         Raises:
-            CompletionError: If prompt is missing or not found
+            CompletionError: 프롬프트가 없거나 찾을 수 없는 경우
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService, CompletionError
             >>> from unittest.mock import MagicMock
             >>> import asyncio
             >>> service = CompletionService()
             >>> db = MagicMock()
 
-            >>> # Test missing prompt name
+            >>> # 프롬프트 이름 누락 테스트
             >>> ref = {}
             >>> try:
             ...     asyncio.run(service._complete_prompt_argument(db, ref, 'arg1', 'val'))
@@ -160,7 +167,7 @@ class CompletionService:
             ...     str(e)
             'Missing prompt name'
 
-            >>> # Test custom completions
+            >>> # 사용자 정의 자동 완성 테스트
             >>> service.register_completions('color', ['red', 'green', 'blue'])
             >>> db.execute.return_value.scalar_one_or_none.return_value = MagicMock(
             ...     argument_schema={'properties': {'color': {'name': 'color'}}}
@@ -171,17 +178,18 @@ class CompletionService:
             >>> result.completion['values']
             ['red', 'green']
         """
-        # Get prompt
+        # 프롬프트 이름 추출
         prompt_name = ref.get("name")
         if not prompt_name:
-            raise CompletionError("Missing prompt name")
+            raise CompletionError("프롬프트 이름이 누락되었습니다")
 
+        # 데이터베이스에서 프롬프트 조회
         prompt = db.execute(select(DbPrompt).where(DbPrompt.name == prompt_name).where(DbPrompt.is_active)).scalar_one_or_none()
 
         if not prompt:
-            raise CompletionError(f"Prompt not found: {prompt_name}")
+            raise CompletionError(f"프롬프트를 찾을 수 없습니다: {prompt_name}")
 
-        # Find argument in schema
+        # 스키마에서 인자 찾기
         arg_schema = None
         for arg in prompt.argument_schema.get("properties", {}).values():
             if arg.get("name") == arg_name:
@@ -189,55 +197,57 @@ class CompletionService:
                 break
 
         if not arg_schema:
-            raise CompletionError(f"Argument not found: {arg_name}")
+            raise CompletionError(f"인자를 찾을 수 없습니다: {arg_name}")
 
-        # Get enum values if defined
+        # enum 값이 정의된 경우 해당 값들 반환
         if "enum" in arg_schema:
+            # 입력값과 일치하는 enum 값들 필터링
             values = [v for v in arg_schema["enum"] if arg_value.lower() in str(v).lower()]
             return CompleteResult(
                 completion={
-                    "values": values[:100],
+                    "values": values[:100],  # 최대 100개로 제한
                     "total": len(values),
                     "hasMore": len(values) > 100,
                 }
             )
 
-        # Check custom completions
+        # 사용자 정의 자동 완성 확인
         if arg_name in self._custom_completions:
+            # 입력값과 일치하는 사용자 정의 값들 필터링
             values = [v for v in self._custom_completions[arg_name] if arg_value.lower() in v.lower()]
             return CompleteResult(
                 completion={
-                    "values": values[:100],
+                    "values": values[:100],  # 최대 100개로 제한
                     "total": len(values),
                     "hasMore": len(values) > 100,
                 }
             )
 
-        # No completions available
+        # 자동 완성 제안사항이 없는 경우
         return CompleteResult(completion={"values": [], "total": 0, "hasMore": False})
 
     async def _complete_resource_uri(self, db: Session, ref: Dict[str, Any], arg_value: str) -> CompleteResult:
-        """Complete resource URI.
+        """리소스 URI를 자동 완성합니다.
 
         Args:
-            db: Database session
-            ref: Resource reference
-            arg_value: Current URI value
+            db: 데이터베이스 세션
+            ref: 리소스 참조 정보
+            arg_value: 현재 URI 값
 
         Returns:
-            URI completion suggestions
+            URI 자동 완성 제안사항들
 
         Raises:
-            CompletionError: If URI template is missing
+            CompletionError: URI 템플릿이 누락된 경우
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService, CompletionError
             >>> from unittest.mock import MagicMock
             >>> import asyncio
             >>> service = CompletionService()
             >>> db = MagicMock()
 
-            >>> # Test missing URI template
+            >>> # URI 템플릿 누락 테스트
             >>> ref = {}
             >>> try:
             ...     asyncio.run(service._complete_resource_uri(db, ref, 'test'))
@@ -245,7 +255,7 @@ class CompletionService:
             ...     str(e)
             'Missing URI template'
 
-            >>> # Test resource filtering
+            >>> # 리소스 필터링 테스트
             >>> ref = {'uri': 'template://'}
             >>> mock_resources = [
             ...     MagicMock(uri='file://doc1.txt'),
@@ -259,36 +269,37 @@ class CompletionService:
             >>> 'file://doc1.txt' in result.completion['values']
             True
         """
-        # Get base URI template
+        # 기본 URI 템플릿 추출
         uri_template = ref.get("uri")
         if not uri_template:
-            raise CompletionError("Missing URI template")
+            raise CompletionError("URI 템플릿이 누락되었습니다")
 
-        # List matching resources
+        # 활성화된 모든 리소스 조회
         resources = db.execute(select(DbResource).where(DbResource.is_active)).scalars().all()
 
-        # Filter by URI pattern
+        # URI 패턴으로 필터링
         matches = []
         for resource in resources:
+            # 입력값이 리소스 URI에 포함되어 있는지 확인
             if arg_value.lower() in resource.uri.lower():
                 matches.append(resource.uri)
 
         return CompleteResult(
             completion={
-                "values": matches[:100],
+                "values": matches[:100],  # 최대 100개로 제한
                 "total": len(matches),
                 "hasMore": len(matches) > 100,
             }
         )
 
     def register_completions(self, arg_name: str, values: List[str]) -> None:
-        """Register custom completion values.
+        """사용자 정의 자동 완성 값을 등록합니다.
 
         Args:
-            arg_name: Argument name
-            values: Completion values
+            arg_name: 인자 이름
+            values: 자동 완성 값들
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService
             >>> service = CompletionService()
             >>> service.register_completions('arg1', ['a', 'b'])
@@ -297,19 +308,20 @@ class CompletionService:
             >>> service.register_completions('arg2', ['x', 'y', 'z'])
             >>> len(service._custom_completions)
             2
-            >>> service.register_completions('arg1', ['c'])  # Overwrite
+            >>> service.register_completions('arg1', ['c'])  # 덮어쓰기
             >>> service._custom_completions['arg1']
             ['c']
         """
+        # 인자 이름에 대한 자동 완성 값들을 저장
         self._custom_completions[arg_name] = list(values)
 
     def unregister_completions(self, arg_name: str) -> None:
-        """Unregister custom completion values.
+        """사용자 정의 자동 완성 값을 등록 해제합니다.
 
         Args:
-            arg_name: Argument name
+            arg_name: 인자 이름
 
-        Examples:
+        예시:
             >>> from mcpgateway.services.completion_service import CompletionService
             >>> service = CompletionService()
             >>> service.register_completions('arg1', ['a', 'b'])
@@ -317,4 +329,5 @@ class CompletionService:
             >>> 'arg1' in service._custom_completions
             False
         """
+        # 지정된 인자의 사용자 정의 자동 완성 값들을 제거
         self._custom_completions.pop(arg_name, None)

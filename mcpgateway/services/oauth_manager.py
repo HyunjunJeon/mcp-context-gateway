@@ -1,27 +1,27 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/oauth_manager.py
-Copyright 2025
+"""위치: ./mcpgateway/services/oauth_manager.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-OAuth 2.0 Manager for MCP Gateway.
+MCP 게이트웨이를 위한 OAuth 2.0 관리자
 
-This module handles OAuth 2.0 authentication flows including:
-- Client Credentials (Machine-to-Machine)
-- Authorization Code (User Delegation)
+이 모듈은 다음과 같은 OAuth 2.0 인증 플로우를 처리합니다:
+- Client Credentials (머신-투-머신)
+- Authorization Code (사용자 위임)
 """
 
-# Standard
+# 표준 라이브러리 임포트
 import asyncio
 import logging
 import secrets
 from typing import Any, Dict, Optional
 
-# Third-Party
+# 서드파티 라이브러리 임포트
 import aiohttp
 from requests_oauthlib import OAuth2Session
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.config import get_settings
 from mcpgateway.utils.oauth_encryption import get_oauth_encryption
 
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class OAuthManager:
-    """Manages OAuth 2.0 authentication flows."""
+    """OAuth 2.0 인증 플로우를 관리합니다."""
 
     def __init__(self, request_timeout: int = 30, max_retries: int = 3, token_storage: Optional[Any] = None):
         """Initialize OAuth Manager.

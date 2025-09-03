@@ -4,10 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-FastAPI router for handling reverse proxy connections.
+역방향 프록시 연결을 처리하는 FastAPI 라우터.
 
-This module provides WebSocket and SSE endpoints for reverse proxy clients
-to connect and tunnel their local MCP servers through the gateway.
+이 모듈은 역방향 프록시 클라이언트가 로컬 MCP 서버를 게이트웨이를 통해
+터널링할 수 있도록 WebSocket 및 SSE 엔드포인트를 제공합니다.
 """
 
 # Standard
@@ -35,15 +35,15 @@ router = APIRouter(prefix="/reverse-proxy", tags=["reverse-proxy"])
 
 
 class ReverseProxySession:
-    """Manages a reverse proxy session."""
+    """역방향 프록시 세션을 관리합니다."""
 
     def __init__(self, session_id: str, websocket: WebSocket, user: Optional[str | dict] = None):
-        """Initialize reverse proxy session.
+        """역방향 프록시 세션을 초기화합니다.
 
         Args:
-            session_id: Unique session identifier.
-            websocket: WebSocket connection.
-            user: Authenticated user info (if any).
+            session_id: 고유한 세션 식별자.
+            websocket: WebSocket 연결.
+            user: 인증된 사용자 정보 (있는 경우).
         """
         self.session_id = session_id
         self.websocket = websocket
@@ -55,10 +55,10 @@ class ReverseProxySession:
         self.bytes_transferred = 0
 
     async def send_message(self, message: Dict[str, Any]) -> None:
-        """Send message to the client.
+        """클라이언트에게 메시지를 전송합니다.
 
         Args:
-            message: Message dictionary to send.
+            message: 전송할 메시지 딕셔너리.
         """
         data = json.dumps(message)
         await self.websocket.send_text(data)
@@ -66,10 +66,10 @@ class ReverseProxySession:
         self.last_activity = datetime.utcnow()
 
     async def receive_message(self) -> Dict[str, Any]:
-        """Receive message from the client.
+        """클라이언트로부터 메시지를 수신합니다.
 
         Returns:
-            Parsed message dictionary.
+            파싱된 메시지 딕셔너리.
         """
         data = await self.websocket.receive_text()
         self.bytes_transferred += len(data)
@@ -79,28 +79,28 @@ class ReverseProxySession:
 
 
 class ReverseProxyManager:
-    """Manages all reverse proxy sessions."""
+    """모든 역방향 프록시 세션을 관리합니다."""
 
     def __init__(self):
-        """Initialize the manager."""
+        """관리자를 초기화합니다."""
         self.sessions: Dict[str, ReverseProxySession] = {}
         self._lock = asyncio.Lock()
 
     async def add_session(self, session: ReverseProxySession) -> None:
-        """Add a new session.
+        """새로운 세션을 추가합니다.
 
         Args:
-            session: Session to add.
+            session: 추가할 세션.
         """
         async with self._lock:
             self.sessions[session.session_id] = session
             LOGGER.info(f"Added reverse proxy session: {session.session_id}")
 
     async def remove_session(self, session_id: str) -> None:
-        """Remove a session.
+        """세션을 제거합니다.
 
         Args:
-            session_id: Session ID to remove.
+            session_id: 제거할 세션 ID.
         """
         async with self._lock:
             if session_id in self.sessions:
@@ -108,21 +108,21 @@ class ReverseProxyManager:
                 LOGGER.info(f"Removed reverse proxy session: {session_id}")
 
     def get_session(self, session_id: str) -> Optional[ReverseProxySession]:
-        """Get a session by ID.
+        """ID로 세션을 조회합니다.
 
         Args:
-            session_id: Session ID to get.
+            session_id: 조회할 세션 ID.
 
         Returns:
-            Session if found, None otherwise.
+            찾은 경우 세션, 그렇지 않으면 None.
         """
         return self.sessions.get(session_id)
 
     def list_sessions(self) -> list[Dict[str, Any]]:
-        """List all active sessions.
+        """모든 활성 세션을 목록으로 반환합니다.
 
         Returns:
-            List of session information dictionaries.
+            세션 정보 딕셔너리의 목록.
 
         Examples:
             >>> from fastapi import WebSocket
@@ -156,78 +156,82 @@ async def websocket_endpoint(
     websocket: WebSocket,
     db: Session = Depends(get_db),
 ):
-    """WebSocket endpoint for reverse proxy connections.
+    """역방향 프록시 연결을 위한 WebSocket 엔드포인트.
 
     Args:
-        websocket: WebSocket connection.
-        db: Database session.
+        websocket: WebSocket 연결.
+        db: 데이터베이스 세션.
     """
     await websocket.accept()
 
-    # Get session ID from headers or generate new one
+    # 1. 세션 ID 획득 (헤더에서 가져오거나 새로 생성)
     session_id = websocket.headers.get("X-Session-ID", uuid.uuid4().hex)
 
-    # Check authentication
+    # 2. 인증 확인
     user = None
     auth_header = websocket.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         try:
-            # TODO: Validate token and get user
+            # TODO: 토큰 검증 및 사용자 정보 획득
             pass
         except Exception as e:
             LOGGER.warning(f"Authentication failed: {e}")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed")
             return
 
-    # Create session
+    # 3. 세션 생성 및 관리자에 등록
     session = ReverseProxySession(session_id, websocket, user)
     await manager.add_session(session)
 
     try:
         LOGGER.info(f"Reverse proxy connected: {session_id}")
 
-        # Main message loop
+        # 4. 메인 메시지 처리 루프
         while True:
             try:
                 message = await session.receive_message()
                 msg_type = message.get("type")
 
                 if msg_type == "register":
-                    # Register the server
+                    # 서버 등록 처리
                     session.server_info = message.get("server", {})
                     LOGGER.info(f"Registered server for session {session_id}: {session.server_info.get('name')}")
 
-                    # Send acknowledgment
+                    # 등록 확인 응답 전송
                     await session.send_message({"type": "register_ack", "sessionId": session_id, "status": "success"})
 
                 elif msg_type == "unregister":
-                    # Unregister the server
+                    # 서버 등록 해제 처리
                     LOGGER.info(f"Unregistering server for session {session_id}")
                     break
 
                 elif msg_type == "heartbeat":
-                    # Respond to heartbeat
+                    # 하트비트 응답 처리
                     await session.send_message({"type": "heartbeat", "sessionId": session_id, "timestamp": datetime.utcnow().isoformat()})
 
                 elif msg_type in ("response", "notification"):
-                    # Handle MCP response/notification from the proxied server
-                    # TODO: Route to appropriate MCP client
+                    # 프록시된 서버로부터의 MCP 응답/알림 처리
+                    # TODO: 적절한 MCP 클라이언트로 라우팅
                     LOGGER.debug(f"Received {msg_type} from session {session_id}")
 
                 else:
                     LOGGER.warning(f"Unknown message type from session {session_id}: {msg_type}")
 
             except WebSocketDisconnect:
+                # WebSocket 연결 해제 처리
                 LOGGER.info(f"WebSocket disconnected: {session_id}")
                 break
             except json.JSONDecodeError as e:
+                # JSON 파싱 오류 처리
                 LOGGER.error(f"Invalid JSON from session {session_id}: {e}")
                 await session.send_message({"type": "error", "message": "Invalid JSON format"})
             except Exception as e:
+                # 기타 예외 처리
                 LOGGER.error(f"Error handling message from session {session_id}: {e}")
                 await session.send_message({"type": "error", "message": str(e)})
 
     finally:
+        # 세션 정리
         await manager.remove_session(session_id)
         LOGGER.info(f"Reverse proxy session ended: {session_id}")
 
@@ -237,14 +241,14 @@ async def list_sessions(
     request: Request,
     _: str | dict = Depends(require_auth),
 ):
-    """List all active reverse proxy sessions.
+    """모든 활성 역방향 프록시 세션을 목록으로 반환합니다.
 
     Args:
-        request: HTTP request.
-        _: Authenticated user info (used for auth check).
+        request: HTTP 요청.
+        _: 인증된 사용자 정보 (인증 확인용).
 
     Returns:
-        List of session information.
+        세션 정보 목록.
     """
     return {"sessions": manager.list_sessions(), "total": len(manager.sessions)}
 
@@ -255,24 +259,24 @@ async def disconnect_session(
     request: Request,
     _: str | dict = Depends(require_auth),
 ):
-    """Disconnect a reverse proxy session.
+    """역방향 프록시 세션을 연결 해제합니다.
 
     Args:
-        session_id: Session ID to disconnect.
-        request: HTTP request.
-        _: Authenticated user info (used for auth check).
+        session_id: 연결 해제할 세션 ID.
+        request: HTTP 요청.
+        _: 인증된 사용자 정보 (인증 확인용).
 
     Returns:
-        Disconnection status.
+        연결 해제 상태.
 
     Raises:
-        HTTPException: If session is not found.
+        HTTPException: 세션을 찾을 수 없는 경우.
     """
     session = manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found")
 
-    # Close the WebSocket connection
+    # WebSocket 연결 종료 및 세션 제거
     await session.websocket.close()
     await manager.remove_session(session_id)
 
@@ -286,28 +290,29 @@ async def send_request_to_session(
     request: Request,
     _: str | dict = Depends(require_auth),
 ):
-    """Send an MCP request to a reverse proxy session.
+    """역방향 프록시 세션에 MCP 요청을 전송합니다.
 
     Args:
-        session_id: Session ID to send request to.
-        mcp_request: MCP request to send.
-        request: HTTP request.
-        _: Authenticated user info (used for auth check).
+        session_id: 요청을 전송할 세션 ID.
+        mcp_request: 전송할 MCP 요청.
+        request: HTTP 요청.
+        _: 인증된 사용자 정보 (인증 확인용).
 
     Returns:
-        Request acknowledgment.
+        요청 확인 응답.
 
     Raises:
-        HTTPException: If session is not found or request fails.
+        HTTPException: 세션을 찾을 수 없거나 요청이 실패한 경우.
     """
     session = manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found")
 
-    # Wrap the request in reverse proxy envelope
+    # 역방향 프록시 envelope로 요청을 감싸기
     message = {"type": "request", "sessionId": session_id, "payload": mcp_request}
 
     try:
+        # 메시지 전송 및 응답 반환
         await session.send_message(message)
         return {"status": "sent", "session_id": session_id}
     except Exception as e:
@@ -319,38 +324,39 @@ async def sse_endpoint(
     session_id: str,
     request: Request,
 ):
-    """SSE endpoint for receiving messages from a reverse proxy session.
+    """역방향 프록시 세션에서 메시지를 수신하는 SSE 엔드포인트.
 
     Args:
-        session_id: Session ID to subscribe to.
-        request: HTTP request.
+        session_id: 구독할 세션 ID.
+        request: HTTP 요청.
 
     Returns:
-        SSE stream.
+        SSE 스트림.
 
     Raises:
-        HTTPException: If session is not found.
+        HTTPException: 세션을 찾을 수 없는 경우.
     """
     session = manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found")
 
     async def event_generator():
-        """Generate SSE events.
+        """SSE 이벤트를 생성합니다.
 
         Yields:
-            dict: SSE event data.
+            dict: SSE 이벤트 데이터.
         """
         try:
-            # Send initial connection event
+            # 초기 연결 이벤트 전송
             yield {"event": "connected", "data": json.dumps({"sessionId": session_id, "serverInfo": session.server_info})}
 
-            # TODO: Implement message queue for SSE delivery
+            # TODO: SSE 전송을 위한 메시지 큐 구현
             while not await request.is_disconnected():
-                await asyncio.sleep(30)  # Keepalive
+                await asyncio.sleep(30)  # 연결 유지용 keepalive
                 yield {"event": "keepalive", "data": json.dumps({"timestamp": datetime.utcnow().isoformat()})}
 
         except asyncio.CancelledError:
+            # 연결 취소 예외 처리 (정상적인 연결 종료)
             pass
 
     return StreamingResponse(

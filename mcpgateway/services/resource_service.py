@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/resource_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/resource_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Resource Service Implementation.
-This module implements resource management according to the MCP specification.
-It handles:
-- Resource registration and retrieval
-- Resource templates and URI handling
-- Resource subscriptions and updates
-- Content type management
-- Active/inactive resource management
+리소스 서비스 구현 모듈
+
+MCP 사양에 따라 리소스 관리를 구현합니다.
+다음 항목들을 처리합니다:
+- 리소스 등록 및 검색
+- 리소스 템플릿 및 URI 처리
+- 리소스 구독 및 업데이트
+- 콘텐츠 타입 관리
+- 활성화/비활성화 리소스 관리
 
 Examples:
     >>> from mcpgateway.services.resource_service import ResourceService, ResourceError

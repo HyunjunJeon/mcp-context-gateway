@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/server_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/server_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-MCP Gateway Server Service
+MCP 게이트웨이 서버 서비스
 
-This module implements server management for the MCP Servers Catalog.
-It handles server registration, listing, retrieval, updates, activation toggling, and deletion.
-It also publishes event notifications for server changes.
+이 모듈은 MCP 서버 카탈로그를 위한 서버 관리를 구현합니다.
+서버 등록, 목록 조회, 검색, 업데이트, 활성화 토글, 삭제를 처리합니다.
+또한 서버 변경에 대한 이벤트 알림을 게시합니다.
 """
 
 # Standard

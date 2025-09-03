@@ -4,22 +4,22 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Fred Araujo
 
-mcpplugins CLI ─ command line tools for authoring and packaging plugins
-This module is exposed as a **console-script** via:
+mcpplugins CLI ─ 플러그인 저작 및 패키징을 위한 명령줄 도구
+이 모듈은 다음을 통해 **콘솔 스크립트**로 노출됩니다:
 
     [project.scripts]
     mcpplugins = "mcpgateway.plugins.tools.cli:main"
 
-so that a user can simply type `mcpplugins ...` to use the CLI.
+사용자가 간단히 `mcpplugins ...`를 입력하여 CLI를 사용할 수 있습니다.
 
-Features
-─────────
-* bootstrap: Creates a new plugin project from template                                                           │
-* install: Installs plugins into a Python environment                                                           │
-* package: Builds an MCP server to serve plugins as tools
+기능
+────
+* bootstrap: 템플릿에서 새로운 플러그인 프로젝트 생성
+* install: Python 환경에 플러그인 설치
+* package: 플러그인을 도구로 제공하는 MCP 서버 빌드
 
-Typical usage
-─────────────
+일반적인 사용법
+───────────────
 ```console
 $ mcpplugins --help
 ```
@@ -126,22 +126,22 @@ def git_user_email() -> str:
 # ---------------------------------------------------------------------------
 @app.command(help="Creates a new plugin project from template.")
 def bootstrap(
-    destination: Annotated[Path, typer.Option("--destination", "-d", help="The directory in which to bootstrap the plugin project.")] = DEFAULT_PROJECT_DIR,
-    template_url: Annotated[str, typer.Option("--template_url", "-u", help="The URL to the plugins copier template.")] = DEFAULT_TEMPLATE_URL,
-    vcs_ref: Annotated[str, typer.Option("--vcs_ref", "-r", help="The version control system tag/branch/commit to use for the template.")] = DEFAULT_VCS_REF,
-    answers_file: Optional[Annotated[typer.FileText, typer.Option("--answers_file", "-a", help="The answers file to be used for bootstrapping.")]] = None,
-    defaults: Annotated[bool, typer.Option("--defaults", help="Bootstrap with defaults.")] = False,
-    dry_run: Annotated[bool, typer.Option("--dry_run", help="Run but do not make any changes.")] = False,
+    destination: Annotated[Path, typer.Option("--destination", "-d", help="플러그인 프로젝트를 부트스트랩할 디렉토리.")] = DEFAULT_PROJECT_DIR,
+    template_url: Annotated[str, typer.Option("--template_url", "-u", help="플러그인 copier 템플릿의 URL.")] = DEFAULT_TEMPLATE_URL,
+    vcs_ref: Annotated[str, typer.Option("--vcs_ref", "-r", help="템플릿에 사용할 버전 관리 시스템 태그/브랜치/커밋.")] = DEFAULT_VCS_REF,
+    answers_file: Optional[Annotated[typer.FileText, typer.Option("--answers_file", "-a", help="부트스트랩에 사용할 응답 파일.")]] = None,
+    defaults: Annotated[bool, typer.Option("--defaults", help="기본값으로 부트스트랩.")] = False,
+    dry_run: Annotated[bool, typer.Option("--dry_run", help="실행하지만 변경하지 않음.")] = False,
 ):
-    """Boostrap a new plugin project from a template.
+    """템플릿에서 새로운 플러그인 프로젝트를 부트스트랩합니다.
 
     Args:
-        destination: The directory in which to bootstrap the plugin project.
-        template_url: The URL to the plugins copier template.
-        vcs_ref: The version control system tag/branch/commit to use for the template.
-        answers_file: The copier answers file that can be used to skip interactive mode.
-        defaults: Bootstrap with defaults.
-        dry_run: Run but do not make any changes.
+        destination: 플러그인 프로젝트를 부트스트랩할 디렉토리.
+        template_url: 플러그인 copier 템플릿의 URL.
+        vcs_ref: 템플릿에 사용할 버전 관리 시스템 태그/브랜치/커밋.
+        answers_file: 대화형 모드를 건너뛰기 위해 사용할 수 있는 copier 응답 파일.
+        defaults: 기본값으로 부트스트랩.
+        dry_run: 실행하지만 변경하지 않음.
     """
     try:
         if command_exists("git"):
@@ -198,19 +198,19 @@ def callback():  # pragma: no cover
 
 
 def main() -> None:  # noqa: D401 - imperative mood is fine here
-    """Entry point for the *mcpplugins* console script.
+    """*mcpplugins* 콘솔 스크립트의 진입점.
 
-    Processes command line arguments, handles version requests, and forwards
-    all other arguments to Uvicorn with sensible defaults injected.
+    명령줄 인자를 처리하고 버전 요청을 처리하며,
+    다른 모든 인자들을 적절한 기본값과 함께 Uvicorn에 전달합니다.
 
-    Environment Variables:
-        PLUGINS_CLI_COMPLETION: Enable auto-completion for plugins CLI (default: false)
-        PLUGINS_CLI_MARKUP_MODE: Set markup mode for plugins CLI (default: rich)
-            Valid options:
-                rich: use rich markup
-                markdown: allow markdown in help strings
-                disabled: disable markup
-            If unset (commented out), uses "rich" if rich is detected, otherwise disables it.
+    환경 변수:
+        PLUGINS_CLI_COMPLETION: 플러그인 CLI의 자동 완성 활성화 (기본값: false)
+        PLUGINS_CLI_MARKUP_MODE: 플러그인 CLI의 마크업 모드 설정 (기본값: rich)
+            유효한 옵션:
+                rich: rich 마크업 사용
+                markdown: 도움말 문자열에 마크다운 허용
+                disabled: 마크업 비활성화
+            설정되지 않은 경우(주석 처리됨), rich가 감지되면 "rich"를 사용하고 그렇지 않으면 비활성화합니다.
     """
     app()
 

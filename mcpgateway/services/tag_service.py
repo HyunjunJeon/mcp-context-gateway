@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/tag_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/tag_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Tag Service Implementation.
-This module implements tag management and retrieval for all entities in the MCP Gateway.
-It handles:
-- Fetching all unique tags across entities
-- Filtering tags by entity type
-- Tag statistics and counts
-- Retrieving entities that have specific tags
+태그 서비스 구현 모듈
+
+MCP 게이트웨이의 모든 엔티티를 위한 태그 관리 및 검색을 구현합니다.
+다음 항목들을 처리합니다:
+- 엔티티 전체에 걸친 고유 태그 검색
+- 엔티티 타입별 태그 필터링
+- 태그 통계 및 개수
+- 특정 태그를 가진 엔티티 검색
 """
 
 # Standard

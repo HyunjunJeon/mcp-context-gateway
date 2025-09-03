@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/prompt_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/prompt_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Prompt Service Implementation.
-This module implements prompt template management according to the MCP specification.
-It handles:
-- Prompt template registration and retrieval
-- Prompt argument validation
-- Template rendering with arguments
-- Resource embedding in prompts
-- Active/inactive prompt management
+프롬프트 서비스 구현 모듈
+
+MCP 사양에 따라 프롬프트 템플릿 관리를 구현합니다.
+다음 항목들을 처리합니다:
+- 프롬프트 템플릿 등록 및 검색
+- 프롬프트 인자 검증
+- 인자를 사용한 템플릿 렌더링
+- 프롬프트 내 리소스 임베딩
+- 활성화/비활성화 프롬프트 관리
 """
 
 # Standard

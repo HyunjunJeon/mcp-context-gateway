@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/logging_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/logging_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Logging Service Implementation.
-This module implements structured logging according to the MCP specification.
-It supports RFC 5424 severity levels, log level management, and log event subscriptions.
+로깅 서비스 구현 모듈
+
+MCP 사양에 따라 구조화된 로깅을 구현합니다.
+RFC 5424 심각도 수준, 로그 수준 관리, 로그 이벤트 구독을 지원합니다.
 """
 
-# Standard
+# 표준 라이브러리 임포트
 import asyncio
 from datetime import datetime, timezone
 import logging
@@ -17,10 +18,10 @@ from logging.handlers import RotatingFileHandler
 import os
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-# Third-Party
-from pythonjsonlogger import jsonlogger  # You may need to install python-json-logger package
+# 서드파티 라이브러리 임포트
+from pythonjsonlogger import jsonlogger  # python-json-logger 패키지를 설치해야 할 수 있습니다
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.config import settings
 from mcpgateway.models import LogLevel
 from mcpgateway.services.log_storage_service import LogStorageService

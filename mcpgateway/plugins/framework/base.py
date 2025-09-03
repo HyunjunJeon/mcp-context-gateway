@@ -4,16 +4,16 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Teryl Taylor, Mihai Criveti
 
-Base plugin implementation.
-This module implements the base plugin object.
-It supports pre and post hooks AI safety, security and business processing
-for the following locations in the server:
-server_pre_register / server_post_register - for virtual server verification
-tool_pre_invoke / tool_post_invoke - for guardrails
-prompt_pre_fetch / prompt_post_fetch - for prompt filtering
-resource_pre_fetch / resource_post_fetch - for content filtering
-auth_pre_check / auth_post_check - for custom auth logic
-federation_pre_sync / federation_post_sync - for gateway federation
+기본 플러그인 구현.
+이 모듈은 기본 플러그인 객체를 구현합니다.
+서버의 다음 위치들에 대한 사전/사후 후크를 지원하여
+AI 안전성, 보안 및 비즈니스 처리를 수행합니다:
+server_pre_register / server_post_register - 가상 서버 검증용
+tool_pre_invoke / tool_post_invoke - 가드레일용
+prompt_pre_fetch / prompt_post_fetch - 프롬프트 필터링용
+resource_pre_fetch / resource_post_fetch - 콘텐츠 필터링용
+auth_pre_check / auth_post_check - 사용자 정의 인증 로직용
+federation_pre_sync / federation_post_sync - 게이트웨이 페데레이션용
 """
 
 # Standard
@@ -42,13 +42,13 @@ from mcpgateway.plugins.framework.models import (
 
 
 class Plugin:
-    """Base plugin object for pre/post processing of inputs and outputs at various locations throughout the server.
+    """서버 전체의 다양한 위치에서 입력과 출력을 사전/사후 처리하는 기본 플러그인 객체.
 
     Examples:
         >>> from mcpgateway.plugins.framework import PluginConfig, HookType, PluginMode
         >>> config = PluginConfig(
         ...     name="test_plugin",
-        ...     description="Test plugin",
+        ...     description="테스트 플러그인",
         ...     author="test",
         ...     kind="mcpgateway.plugins.framework.Plugin",
         ...     version="1.0.0",
@@ -69,16 +69,16 @@ class Plugin:
     """
 
     def __init__(self, config: PluginConfig) -> None:
-        """Initialize a plugin with a configuration and context.
+        """설정으로 플러그인을 초기화합니다.
 
         Args:
-            config: The plugin configuration
+            config: 플러그인 설정
 
         Examples:
             >>> from mcpgateway.plugins.framework import PluginConfig, HookType
             >>> config = PluginConfig(
             ...     name="simple_plugin",
-            ...     description="Simple test",
+            ...     description="간단한 테스트",
             ...     author="test",
             ...     kind="test.Plugin",
             ...     version="1.0.0",
@@ -93,46 +93,46 @@ class Plugin:
 
     @property
     def priority(self) -> int:
-        """Return the plugin's priority.
+        """플러그인의 우선순위를 반환합니다.
 
         Returns:
-            Plugin's priority.
+            플러그인의 우선순위.
         """
         return self._config.priority
 
     @property
     def config(self) -> PluginConfig:
-        """Return the plugin's configuration.
+        """플러그인의 설정을 반환합니다.
 
         Returns:
-            Plugin's configuration.
+            플러그인의 설정.
         """
         return self._config
 
     @property
     def mode(self) -> PluginMode:
-        """Return the plugin's mode.
+        """플러그인의 모드를 반환합니다.
 
         Returns:
-            Plugin's mode.
+            플러그인의 모드.
         """
         return self._config.mode
 
     @property
     def name(self) -> str:
-        """Return the plugin's name.
+        """플러그인의 이름을 반환합니다.
 
         Returns:
-            Plugin's name.
+            플러그인의 이름.
         """
         return self._config.name
 
     @property
     def hooks(self) -> list[HookType]:
-        """Return the plugin's currently configured hooks.
+        """플러그인의 현재 설정된 후크들을 반환합니다.
 
         Returns:
-            Plugin's configured hooks.
+            플러그인의 설정된 후크들.
         """
         return self._config.hooks
 

@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/import_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/import_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Import Service Implementation.
-This module implements comprehensive configuration import functionality according to the import specification.
-It handles:
-- Import file validation and schema compliance
-- Entity creation and updates with conflict resolution
-- Dependency resolution and processing order
-- Authentication data decryption and re-encryption
-- Dry-run functionality for validation
-- Cross-environment key rotation support
-- Import status tracking and progress reporting
+구성 가져오기 서비스 구현 모듈
+
+가져오기 사양에 따라 포괄적인 구성 가져오기 기능을 구현합니다.
+다음 항목들을 처리합니다:
+- 가져오기 파일 검증 및 스키마 준수
+- 충돌 해결을 통한 엔티티 생성 및 업데이트
+- 의존성 해결 및 처리 순서
+- 인증 데이터 복호화 및 재암호화
+- 검증을 위한 드라이런 기능
+- 크로스-환경 키 로테이션 지원
+- 가져오기 상태 추적 및 진행 보고
 """
 
-# Standard
+# 표준 라이브러리 임포트
 import base64
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -24,10 +25,10 @@ import logging
 from typing import Any, Dict, List, Optional
 import uuid
 
-# Third-Party
+# 서드파티 라이브러리 임포트
 from sqlalchemy.orm import Session
 
-# First-Party
+# 자체 라이브러리 임포트
 from mcpgateway.config import settings
 from mcpgateway.schemas import AuthenticationValues, GatewayCreate, GatewayUpdate, PromptCreate, PromptUpdate, ResourceCreate, ResourceUpdate, ServerCreate, ServerUpdate, ToolCreate, ToolUpdate
 from mcpgateway.services.gateway_service import GatewayNameConflictError, GatewayService
@@ -42,9 +43,9 @@ logger = logging.getLogger(__name__)
 
 
 class ConflictStrategy(str, Enum):
-    """Strategies for handling conflicts during import.
+    """가져오기 중 충돌을 처리하는 전략들을 정의합니다.
 
-    Examples:
+    예시:
         >>> ConflictStrategy.SKIP.value
         'skip'
         >>> ConflictStrategy.UPDATE.value
@@ -57,16 +58,16 @@ class ConflictStrategy(str, Enum):
         <ConflictStrategy.UPDATE: 'update'>
     """
 
-    SKIP = "skip"
-    UPDATE = "update"
-    RENAME = "rename"
-    FAIL = "fail"
+    SKIP = "skip"      # 충돌 시 해당 엔티티 건너뛰기
+    UPDATE = "update"  # 기존 엔티티 업데이트
+    RENAME = "rename"  # 새 이름으로 엔티티 생성
+    FAIL = "fail"      # 충돌 시 가져오기 실패
 
 
 class ImportError(Exception):  # pylint: disable=redefined-builtin
-    """Base class for import-related errors.
+    """가져오기 관련 오류들의 기본 클래스입니다.
 
-    Examples:
+    예시:
         >>> error = ImportError("Something went wrong")
         >>> str(error)
         'Something went wrong'
@@ -76,9 +77,9 @@ class ImportError(Exception):  # pylint: disable=redefined-builtin
 
 
 class ImportValidationError(ImportError):
-    """Raised when import data validation fails.
+    """가져오기 데이터 검증 실패 시 발생하는 예외입니다.
 
-    Examples:
+    예시:
         >>> error = ImportValidationError("Invalid schema")
         >>> str(error)
         'Invalid schema'
@@ -88,9 +89,9 @@ class ImportValidationError(ImportError):
 
 
 class ImportConflictError(ImportError):
-    """Raised when import conflicts cannot be resolved.
+    """가져오기 충돌을 해결할 수 없을 때 발생하는 예외입니다.
 
-    Examples:
+    예시:
         >>> error = ImportConflictError("Name conflict: tool_name")
         >>> str(error)
         'Name conflict: tool_name'
@@ -100,7 +101,7 @@ class ImportConflictError(ImportError):
 
 
 class ImportStatus:
-    """Tracks the status of an import operation."""
+    """가져오기 작업의 상태를 추적합니다."""
 
     def __init__(self, import_id: str):
         """Initialize import status tracking.

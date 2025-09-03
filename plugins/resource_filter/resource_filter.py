@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Resource Filter Plugin - Demonstrates resource hook functionality.
+"""리소스 필터 플러그인 - 리소스 후크 기능 데모.
 
 Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-This plugin demonstrates how to use resource_pre_fetch and resource_post_fetch hooks
-to filter and modify resource content. It can:
-- Block resources based on URI patterns or protocols
-- Limit resource content size
-- Redact sensitive information from resource content
-- Add metadata to resources
+이 플러그인은 resource_pre_fetch 및 resource_post_fetch 후크를 사용하여
+리소스 콘텐츠를 필터링하고 수정하는 방법을 보여줍니다.
+다음과 같은 기능들을 수행할 수 있습니다:
+- URI 패턴이나 프로토콜에 기반하여 리소스 차단
+- 리소스 콘텐츠 크기 제한
+- 리소스 콘텐츠에서 민감한 정보 삭제
+- 리소스에 메타데이터 추가
 """
 
 import re
@@ -30,47 +31,59 @@ from mcpgateway.plugins.framework import (
 
 
 class ResourceFilterPlugin(Plugin):
-    """Plugin that filters and modifies resources.
+    """리소스를 필터링하고 수정하는 플러그인.
 
-    This plugin demonstrates the use of resource hooks to:
-    - Validate resource URIs before fetching
-    - Filter content after fetching
-    - Add metadata to resources
-    - Block certain protocols or domains
+    이 플러그인은 리소스 후크를 사용하여 다음 기능들을 수행합니다:
+    - 리소스 가져오기 전 URI 검증
+    - 가져온 후 콘텐츠 필터링
+    - 리소스에 메타데이터 추가
+    - 특정 프로토콜이나 도메인 차단
     """
 
     def __init__(self, config: PluginConfig) -> None:
-        """Initialize the resource filter plugin.
+        """리소스 필터 플러그인을 초기화합니다.
 
         Args:
-            config: Plugin configuration containing filter settings.
+            config: 필터 설정을 포함하는 플러그인 설정
         """
+        # 부모 클래스 초기화
         super().__init__(config)
+
+        # 플러그인 설정에서 필터링 옵션들을 로드 (기본값 포함)
         plugin_config = config.config if config.config else {}
+
+        # 최대 콘텐츠 크기 설정 (기본값: 1MB)
         self.max_content_size = plugin_config.get("max_content_size", 1048576)
+
+        # 허용되는 프로토콜 목록 (기본값: file, http, https)
         self.allowed_protocols = plugin_config.get("allowed_protocols", ["file", "http", "https"])
+
+        # 차단된 도메인 목록
         self.blocked_domains = plugin_config.get("blocked_domains", [])
+
+        # 콘텐츠 필터링 규칙들
         self.content_filters = plugin_config.get("content_filters", [])
 
     async def resource_pre_fetch(
         self, payload: ResourcePreFetchPayload, context: PluginContext
     ) -> ResourcePreFetchResult:
-        """Validate and potentially modify resource requests before fetching.
+        """리소스 가져오기 전 요청을 검증하고 수정하는 메서드.
 
         Args:
-            payload: The resource pre-fetch payload containing URI and metadata.
-            context: Plugin execution context.
+            payload: URI와 메타데이터를 포함하는 리소스 사전 가져오기 페이로드
+            context: 플러그인 실행 맥락
 
         Returns:
-            ResourcePreFetchResult indicating whether to continue and any modifications.
+            계속 진행 여부와 수정사항을 나타내는 ResourcePreFetchResult
         """
-        # Parse the URI
+        # URI 파싱 시도
         try:
             parsed = urlparse(payload.uri)
         except Exception as e:
+            # URI 파싱 실패 시 위반사항 생성
             violation = PluginViolation(
-                reason="Invalid URI",
-                description=f"Could not parse resource URI: {e}",
+                reason="유효하지 않은 URI",
+                description=f"리소스 URI를 파싱할 수 없습니다: {e}",
                 code="INVALID_URI",
                 details={"uri": payload.uri, "error": str(e)}
             )
@@ -177,18 +190,18 @@ class ResourceFilterPlugin(Plugin):
     async def resource_post_fetch(
         self, payload: ResourcePostFetchPayload, context: PluginContext
     ) -> ResourcePostFetchResult:
-        """Filter and modify resource content after fetching.
+        """가져온 후 리소스 콘텐츠를 필터링하고 수정하는 메서드.
 
         Args:
-            payload: The resource post-fetch payload containing fetched content.
-            context: Plugin execution context.
+            payload: 가져온 콘텐츠를 포함하는 리소스 사후 가져오기 페이로드
+            context: 플러그인 실행 맥락
 
         Returns:
-            ResourcePostFetchResult with potentially modified content.
+            잠재적으로 수정된 콘텐츠를 포함하는 ResourcePostFetchResult
         """
-        # Check if pre-fetch validation was done
+        # 사전 가져오기 검증이 수행되었는지 확인
         if not context.get_state("uri_validated"):
-            # This resource wasn't validated in pre-fetch, skip processing
+            # 이 리소스는 사전 가져오기에서 검증되지 않았으므로 처리 건너뜀
             return ResourcePostFetchResult(
                 continue_processing=True,
                 modified_payload=payload

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/services/log_storage_service.py
-Copyright 2025
+"""위치: ./mcpgateway/services/log_storage_service.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Log Storage Service Implementation.
-This service provides in-memory storage for recent logs with entity context,
-supporting filtering, pagination, and real-time streaming.
+로그 저장소 서비스 구현 모듈
+
+이 서비스는 엔티티 컨텍스트를 가진 최근 로그를 위한 메모리 내 저장소를 제공하며,
+필터링, 페이지네이션, 실시간 스트리밍을 지원합니다.
 """
 
 # Standard
