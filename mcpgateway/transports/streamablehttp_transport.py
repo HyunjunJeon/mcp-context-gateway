@@ -4,23 +4,23 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Keval Mahajan
 
-Streamable HTTP Transport Implementation.
-This module implements Streamable Http transport for MCP
+스트리밍 HTTP 전송 구현체.
+MCP를 위한 스트리밍 HTTP 전송을 구현합니다.
 
-Key components include:
-- SessionManagerWrapper: Manages the lifecycle of streamable HTTP sessions
-- Configuration options for:
-        1. stateful/stateless operation
-        2. JSON response mode or SSE streams
-- InMemoryEventStore: A simple in-memory event storage system for maintaining session state
+주요 구성 요소:
+- SessionManagerWrapper: 스트리밍 HTTP 세션의 수명 주기를 관리
+- 구성 옵션:
+        1. stateful/stateless 작동
+        2. JSON 응답 모드 또는 SSE 스트림
+- InMemoryEventStore: 세션 상태를 유지하기 위한 간단한 인메모리 이벤트 저장 시스템
 
-Examples:
-    >>> # Test module imports
+예시:
+    >>> # 모듈 임포트 테스트
     >>> from mcpgateway.transports.streamablehttp_transport import (
     ...     EventEntry, InMemoryEventStore, SessionManagerWrapper
     ... )
     >>>
-    >>> # Verify classes are available
+    >>> # 클래스 사용 가능 여부 확인
     >>> EventEntry.__name__
     'EventEntry'
     >>> InMemoryEventStore.__name__
@@ -81,10 +81,10 @@ request_headers_var: contextvars.ContextVar[dict[str, Any]] = contextvars.Contex
 @dataclass
 class EventEntry:
     """
-    Represents an event entry in the event store.
+    이벤트 저장소의 이벤트 항목을 나타냅니다.
 
-    Examples:
-        >>> # Create an event entry
+    예시:
+        >>> # 이벤트 항목 생성
         >>> from mcp.types import JSONRPCMessage
         >>> message = JSONRPCMessage(jsonrpc="2.0", method="test", id=1)
         >>> entry = EventEntry(event_id="test-123", stream_id="stream-456", message=message)
@@ -92,7 +92,7 @@ class EventEntry:
         'test-123'
         >>> entry.stream_id
         'stream-456'
-        >>> # Access message attributes through model_dump() for Pydantic v2
+        >>> # Pydantic v2용 model_dump()를 통해 메시지 속성에 접근
         >>> message_dict = message.model_dump()
         >>> message_dict['jsonrpc']
         '2.0'
@@ -109,13 +109,13 @@ class EventEntry:
 
 class InMemoryEventStore(EventStore):
     """
-    Simple in-memory implementation of the EventStore interface for resumability.
-    This is primarily intended for examples and testing, not for production use
-    where a persistent storage solution would be more appropriate.
+    재개 가능성을 위한 EventStore 인터페이스의 간단한 인메모리 구현체.
+    이는 주로 예시와 테스트를 위한 것이며, 지속적인 저장 솔루션이
+    더 적절한 프로덕션 환경에서는 사용하지 않는 것이 좋습니다.
 
-    This implementation keeps only the last N events per stream for memory efficiency.
+    이 구현체는 메모리 효율성을 위해 스트림당 마지막 N개의 이벤트만 유지합니다.
 
-    Examples:
+    예시:
         >>> # Create event store with default max events
         >>> store = InMemoryEventStore()
         >>> store.max_events_per_stream
@@ -143,13 +143,13 @@ class InMemoryEventStore(EventStore):
     """
 
     def __init__(self, max_events_per_stream: int = 100):
-        """Initialize the event store.
+        """이벤트 저장소를 초기화합니다.
 
         Args:
-            max_events_per_stream: Maximum number of events to keep per stream
+            max_events_per_stream: 스트림당 유지할 최대 이벤트 수
 
-        Examples:
-            >>> # Test initialization with default value
+        예시:
+            >>> # 기본값으로 초기화 테스트
             >>> store = InMemoryEventStore()
             >>> store.max_events_per_stream
             100
@@ -158,15 +158,16 @@ class InMemoryEventStore(EventStore):
             >>> store.event_index == {}
             True
 
-            >>> # Test initialization with custom value
+            >>> # 사용자 정의 값으로 초기화 테스트
             >>> store = InMemoryEventStore(max_events_per_stream=25)
             >>> store.max_events_per_stream
             25
         """
+        # 스트림당 최대 이벤트 수 설정
         self.max_events_per_stream = max_events_per_stream
-        # for maintaining last N events per stream
+        # 스트림당 마지막 N개의 이벤트를 유지하기 위한 딕셔너리
         self.streams: dict[StreamId, deque[EventEntry]] = {}
-        # event_id -> EventEntry for quick lookup
+        # 빠른 조회를 위한 event_id -> EventEntry 매핑
         self.event_index: dict[EventId, EventEntry] = {}
 
     async def store_event(self, stream_id: StreamId, message: JSONRPCMessage) -> EventId:

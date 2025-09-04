@@ -1,29 +1,28 @@
 # -*- coding: utf-8 -*-
-'''Location: ./mcpgateway/translate.py
-Copyright 2025
+'''위치: ./mcpgateway/translate.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti, Manav Gupta
+저자: Mihai Criveti, Manav Gupta
 
-r"""Bridges between different MCP transport protocols.
-This module provides bidirectional bridging between MCP servers that communicate
-via different transport protocols: stdio/JSON-RPC, HTTP/SSE, and streamable HTTP.
-It enables exposing local MCP servers over HTTP or consuming remote endpoints
-as local stdio servers.
+r"""다른 MCP 전송 프로토콜 간의 브리지.
+이 모듈은 stdio/JSON-RPC, HTTP/SSE, 스트림 가능 HTTP 등 다양한 전송 프로토콜을 통해
+통신하는 MCP 서버 간의 양방향 브리지를 제공합니다. 로컬 MCP 서버를 HTTP로 노출하거나
+원격 엔드포인트를 로컬 stdio 서버로 사용할 수 있습니다.
 
-The bridge supports multiple modes of operation:
-- stdio to SSE: Expose a local stdio MCP server over HTTP/SSE
-- SSE to stdio: Bridge a remote SSE endpoint to local stdio
-- stdio to streamable HTTP: Expose a local stdio MCP server via streamable HTTP
-- streamable HTTP to stdio: Bridge a remote streamable HTTP endpoint to local stdio
+브리지는 여러 작동 모드를 지원합니다:
+- stdio에서 SSE로: 로컬 stdio MCP 서버를 HTTP/SSE로 노출
+- SSE에서 stdio로: 원격 SSE 엔드포인트를 로컬 stdio로 브리지
+- stdio에서 스트림 가능 HTTP로: 로컬 stdio MCP 서버를 스트림 가능 HTTP로 노출
+- 스트림 가능 HTTP에서 stdio로: 원격 스트림 가능 HTTP 엔드포인트를 로컬 stdio로 브리지
 
-Examples:
-    Programmatic usage:
+예제:
+    프로그래밍 방식 사용:
 
     >>> import asyncio
     >>> from mcpgateway.translate import start_stdio
     >>> asyncio.run(start_stdio("uvx mcp-server-git", 9000, "info", None, "127.0.0.1"))  # doctest: +SKIP
 
-    Test imports and configuration:
+    가져오기 및 구성 테스트:
 
     >>> from mcpgateway.translate import MCPServer, StreamableHTTPSessionManager
     >>> isinstance(MCPServer, type)
@@ -37,7 +36,7 @@ Examples:
     >>> isinstance(DEFAULT_KEEPALIVE_ENABLED, bool)
     True
 
-    Test Starlette imports:
+    Starlette 가져오기 테스트:
 
     >>> from mcpgateway.translate import Starlette, Route
     >>> isinstance(Starlette, type)
@@ -45,7 +44,7 @@ Examples:
     >>> isinstance(Route, type)
     True
 
-    Test logging setup:
+    로깅 설정 테스트:
 
     >>> from mcpgateway.translate import LOGGER, logging_service
     >>> LOGGER is not None

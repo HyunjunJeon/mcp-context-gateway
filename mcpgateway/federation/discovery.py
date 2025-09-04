@@ -4,17 +4,16 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Federation Discovery Service.
-This module implements automatic peer discovery for MCP Gateways.
-It supports multiple discovery mechanisms:
-- DNS-SD service discovery
-- Static peer lists
-- Peer exchange protocol
-- Manual registration
+페데레이션 검색 서비스.
+MCP 게이트웨이를 위한 자동 피어 검색을 구현합니다.
+다양한 검색 메커니즘을 지원합니다:
+- DNS-SD 서비스 검색
+- 정적 피어 목록
+- 피어 교환 프로토콜
+- 수동 등록
 
-The discovery service automatically finds and connects to other MCP gateways
-on the network, maintains a list of active peers, and exchanges peer information
-to build a federation of gateways.
+검색 서비스는 네트워크에서 다른 MCP 게이트웨이를 자동으로 찾아 연결하고,
+활성 피어 목록을 유지하며, 게이트웨이 연합을 구축하기 위해 피어 정보를 교환합니다.
 
 # Run doctests with coverage and show missing lines
 pytest --doctest-modules --cov=mcpgateway.federation.discovery --cov-report=term-missing mcpgateway/federation/discovery.py -v
@@ -23,8 +22,8 @@ pytest --doctest-modules --cov=mcpgateway.federation.discovery --cov-report=term
 pytest --doctest-modules --cov=mcpgateway.federation.discovery --cov-report=annotate mcpgateway/federation/discovery.py -v
 
 
-Examples:
-    Basic usage of the discovery service::
+사용 예시:
+    검색 서비스의 기본 사용법::
 
         >>> import asyncio
         >>> from mcpgateway.federation.discovery import DiscoveryService
@@ -33,19 +32,19 @@ Examples:
         ...     discovery = DiscoveryService()
         ...     await discovery.start()
         ...
-        ...     # Add a manual peer
+        ...     # 수동으로 피어 추가
         ...     await discovery.add_peer("http://gateway.example.com:8080", "manual")
         ...
-        ...     # Get discovered peers
+        ...     # 검색된 피어 조회
         ...     peers = discovery.get_discovered_peers()
         ...     for peer in peers:
-        ...         print(f"Found peer: {peer.url} via {peer.source}")
+        ...         print(f"피어 발견: {peer.url} ({peer.source}을 통해)")
         ...
         ...     await discovery.stop()
         >>>
         >>> # asyncio.run(main())
 
-    Testing peer discovery::
+    피어 검색 테스트::
 
         >>> from datetime import datetime, timezone
         >>> peer = DiscoveredPeer(
@@ -91,22 +90,21 @@ PROTOCOL_VERSION = os.getenv("PROTOCOL_VERSION", "2025-03-26")
 
 @dataclass
 class DiscoveredPeer:
-    """Information about a discovered peer gateway.
+    """발견된 피어 게이트웨이에 대한 정보.
 
-    Represents a peer MCP gateway that has been discovered through various
-    discovery mechanisms. Tracks when the peer was discovered, last seen,
-    and its capabilities.
+    다양한 검색 메커니즘을 통해 발견된 피어 MCP 게이트웨이를 표현합니다.
+    피어가 언제 발견되었고, 마지막으로 언제 접촉되었으며, 어떤 기능을 가지고 있는지 추적합니다.
 
-    Attributes:
-        url (str): The base URL of the peer gateway.
-        name (Optional[str]): Human-readable name of the peer gateway.
-        protocol_version (Optional[str]): MCP protocol version supported by the peer.
-        capabilities (Optional[ServerCapabilities]): Server capabilities of the peer.
-        discovered_at (datetime): When the peer was first discovered.
-        last_seen (datetime): When the peer was last successfully contacted.
-        source (str): How the peer was discovered (e.g., "dns-sd", "static", "manual").
+    속성:
+        url (str): 피어 게이트웨이의 기본 URL.
+        name (Optional[str]): 피어 게이트웨이의 사람이 읽을 수 있는 이름.
+        protocol_version (Optional[str]): 피어가 지원하는 MCP 프로토콜 버전.
+        capabilities (Optional[ServerCapabilities]): 피어의 서버 기능 정보.
+        discovered_at (datetime): 피어가 처음 발견된 시각.
+        last_seen (datetime): 피어와 마지막으로 성공적으로 접촉한 시각.
+        source (str): 피어가 어떻게 발견되었는지 (예: "dns-sd", "static", "manual").
 
-    Examples:
+    사용 예시:
         >>> from datetime import datetime, timezone
         >>> peer = DiscoveredPeer(
         ...     url="http://gateway1.local:8080",
@@ -139,17 +137,16 @@ class DiscoveredPeer:
 
 
 class LocalDiscoveryService:
-    """Base class for local network discovery using DNS-SD.
+    """DNS-SD를 사용한 로컬 네트워크 검색의 기본 클래스.
 
-    Provides functionality for advertising the local gateway on the network
-    using DNS Service Discovery (mDNS/Bonjour). This allows other gateways
-    on the same network to automatically discover this gateway.
+    DNS Service Discovery(mDNS/Bonjour)를 사용하여 로컬 게이트웨이를 네트워크에 광고하는 기능을 제공합니다.
+    이를 통해 같은 네트워크의 다른 게이트웨이들이 이 게이트웨이를 자동으로 검색할 수 있습니다.
 
-    Attributes:
-        _service_type (str): The DNS-SD service type for MCP gateways.
-        _service_info (ServiceInfo): Zeroconf service information for advertising.
+    속성:
+        _service_type (str): MCP 게이트웨이들을 위한 DNS-SD 서비스 타입.
+        _service_info (ServiceInfo): 광고를 위한 Zeroconf 서비스 정보.
 
-    Examples:
+    사용 예시:
         >>> service = LocalDiscoveryService()
         >>> service._service_type
         '_mcp._tcp.local.'
@@ -168,12 +165,11 @@ class LocalDiscoveryService:
     """
 
     def __init__(self):
-        """Initialize local discovery service.
+        """로컬 검색 서비스 초기화.
 
-        Sets up the service information for DNS-SD advertisement including
-        the service type, name, port, and properties.
+        서비스 타입, 이름, 포트, 속성 등을 포함한 DNS-SD 광고를 위한 서비스 정보를 설정합니다.
         """
-        # Service info for local discovery
+        # 로컬 검색을 위한 서비스 정보 설정
         self._service_type = "_mcp._tcp.local."
         self._service_info = ServiceInfo(
             self._service_type,
@@ -188,28 +184,27 @@ class LocalDiscoveryService:
         )
 
     def _get_local_addresses(self) -> List[str]:
-        """Get list of local network addresses.
+        """로컬 네트워크 주소 목록을 가져옵니다.
 
-        Retrieves all non-localhost IP addresses for the local machine.
-        Falls back to localhost if no other addresses are found or if
-        an error occurs.
+        로컬 머신의 모든 비-localhost IP 주소를 검색합니다.
+        다른 주소가 없거나 오류가 발생하면 localhost로 폴백합니다.
 
         Returns:
-            List[str]: List of IP addresses as strings.
+            List[str]: IP 주소들의 문자열 목록.
 
-        Examples:
+        사용 예시:
             >>> service = LocalDiscoveryService()
             >>> addrs = service._get_local_addresses()
             >>> isinstance(addrs, list)
             True
             >>> all(isinstance(addr, str) for addr in addrs)
             True
-            >>> len(addrs) >= 1  # At least localhost
+            >>> len(addrs) >= 1  # 최소 localhost
             True
-            >>> # Check IP format
-            >>> all('.' in addr for addr in addrs)  # IPv4 format
+            >>> # IP 형식 확인
+            >>> all('.' in addr for addr in addrs)  # IPv4 형식
             True
-            >>> # Verify no empty addresses
+            >>> # 빈 주소 없음 확인
             >>> all(addr for addr in addrs)
             True
             >>> '' not in addrs
@@ -217,52 +212,52 @@ class LocalDiscoveryService:
         """
         addresses = []
         try:
-            # Get all network interfaces
+            # 모든 네트워크 인터페이스 가져오기
             for iface in socket.getaddrinfo(socket.gethostname(), None):
                 addr = iface[4][0]
                 ip_obj = ipaddress.ip_address(addr)
                 is_ipv4 = isinstance(ip_obj, ipaddress.IPv4Address)
-                # Skip localhost and non ipv4 addresses
+                # localhost와 비-IPv4 주소 건너뛰기
                 if is_ipv4 and not addr.startswith("127."):
                     addresses.append(addr)
         except Exception as e:
-            logger.warning(f"Failed to get local addresses: {e}")
-            # Fall back to localhost
+            logger.warning(f"로컬 주소 가져오기 실패: {e}")
+            # localhost로 폴백
             addresses.append("127.0.0.1")
 
         return addresses or ["127.0.0.1"]
 
 
 class DiscoveryService(LocalDiscoveryService):
-    """Service for automatic gateway discovery.
+    """자동 게이트웨이 검색 서비스.
 
-    Supports multiple discovery mechanisms:
-    - DNS-SD for local network discovery
-    - Static peer lists from configuration
-    - Peer exchange with known gateways
-    - Manual registration via API
+    다양한 검색 메커니즘을 지원합니다:
+    - 로컬 네트워크 검색을 위한 DNS-SD
+    - 구성에서의 정적 피어 목록
+    - 알려진 게이트웨이들과의 피어 교환
+    - API를 통한 수동 등록
 
-    The service maintains a list of discovered peers, periodically refreshes
-    their information, and removes stale peers that haven't been seen recently.
+    서비스는 검색된 피어 목록을 유지하고, 주기적으로 정보를 새로고침하며,
+    최근에 접촉하지 않은 오래된 피어들을 제거합니다.
 
-    Attributes:
-        _zeroconf (Optional[AsyncZeroconf]): Zeroconf instance for DNS-SD.
-        _browser (Optional[AsyncServiceBrowser]): Service browser for discovering peers.
-        _http_client (httpx.AsyncClient): HTTP client for communicating with peers.
-        _discovered_peers (Dict[str, DiscoveredPeer]): Map of URL to peer information.
-        _cleanup_task (Optional[asyncio.Task]): Background task for cleaning stale peers.
-        _refresh_task (Optional[asyncio.Task]): Background task for refreshing peer info.
+    속성:
+        _zeroconf (Optional[AsyncZeroconf]): DNS-SD를 위한 Zeroconf 인스턴스.
+        _browser (Optional[AsyncServiceBrowser]): 피어 검색을 위한 서비스 브라우저.
+        _http_client (httpx.AsyncClient): 피어들과 통신하기 위한 HTTP 클라이언트.
+        _discovered_peers (Dict[str, DiscoveredPeer]): URL에서 피어 정보로의 매핑.
+        _cleanup_task (Optional[asyncio.Task]): 오래된 피어들을 정리하는 백그라운드 태스크.
+        _refresh_task (Optional[asyncio.Task]): 피어 정보를 새로고침하는 백그라운드 태스크.
 
-    Examples:
+    사용 예시:
         >>> import asyncio
         >>> async def test_discovery():
         ...     service = DiscoveryService()
         ...     await service.start()
         ...
-        ...     # Add a peer manually
+        ...     # 수동으로 피어 추가
         ...     added = await service.add_peer("http://peer1.local:8080", "manual")
         ...
-        ...     # Get all discovered peers
+        ...     # 모든 검색된 피어 조회
         ...     peers = service.get_discovered_peers()
         ...
         ...     await service.stop()
@@ -272,62 +267,64 @@ class DiscoveryService(LocalDiscoveryService):
     """
 
     def __init__(self):
-        """Initialize discovery service.
+        """검색 서비스 초기화.
 
-        Sets up the HTTP client, peer tracking dictionary, and prepares
-        for background tasks. Does not start any network operations.
+        HTTP 클라이언트, 피어 추적 딕셔너리를 설정하고 백그라운드 태스크를 준비합니다.
+        네트워크 작업은 시작하지 않습니다.
         """
         super().__init__()
 
         self._zeroconf: Optional[AsyncZeroconf] = None
         self._browser: Optional[AsyncServiceBrowser] = None
+        # 설정된 타임아웃과 SSL 검증 설정으로 HTTP 클라이언트 초기화
         self._http_client = httpx.AsyncClient(timeout=settings.federation_timeout, verify=not settings.skip_ssl_verify)
 
-        # Track discovered peers
+        # 검색된 피어들을 추적
         self._discovered_peers: Dict[str, DiscoveredPeer] = {}
 
-        # Start background tasks
+        # 백그라운드 태스크 시작
         self._cleanup_task: Optional[asyncio.Task] = None
         self._refresh_task: Optional[asyncio.Task] = None
 
     async def start(self) -> None:
-        """Start discovery service.
+        """검색 서비스 시작.
 
-        Initializes DNS-SD if enabled, starts background tasks for peer
-        maintenance, and loads any statically configured peers.
+        DNS-SD를 활성화된 경우 초기화하고, 피어 유지 관리를 위한 백그라운드 태스크를 시작하며,
+        정적으로 구성된 피어들을 로드합니다.
 
         Raises:
-            Exception: If unable to start discovery service.
+            Exception: 검색 서비스를 시작할 수 없는 경우.
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> async def test_start():
             ...     service = DiscoveryService()
             ...     await service.start()
-            ...     # Service is now running
+            ...     # 서비스가 이제 실행 중입니다
             ...     await service.stop()
             >>> # asyncio.run(test_start())
         """
         try:
-            # Initialize DNS-SD
+            # DNS-SD 초기화
             if settings.federation_discovery:
                 self._zeroconf = AsyncZeroconf()
                 await self._zeroconf.async_register_service(self._service_info)
+                # 서비스 상태 변경 핸들러와 함께 서비스 브라우저 생성
                 self._browser = AsyncServiceBrowser(
                     self._zeroconf.zeroconf,
                     self._service_type,
                     handlers=[self._on_service_state_change],
                 )
 
-            # Start background tasks
+            # 백그라운드 태스크 시작
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
             self._refresh_task = asyncio.create_task(self._refresh_loop())
 
-            # Load static peers
+            # 정적 피어들 로드
             for peer_url in settings.federation_peers:
                 await self.add_peer(peer_url, source="static")
 
-            logger.info("Discovery service started")
+            logger.info("검색 서비스 시작됨")
 
         except Exception as e:
             logger.error(f"Failed to start discovery service: {e}")

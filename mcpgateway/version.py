@@ -1,29 +1,28 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/version.py
-Copyright 2025
+"""위치: ./mcpgateway/version.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-version.py - diagnostics endpoint (HTML + JSON)
-A FastAPI router that mounts at /version and returns either:
-- JSON - machine-readable diagnostics payload
-- HTML - a lightweight dashboard when the client requests text/html or ?format=html
+version.py - 진단 엔드포인트 (HTML + JSON)
+/version에 마운트되는 FastAPI 라우터로 다음 중 하나를 반환합니다:
+- JSON - 기계 판독 가능한 진단 페이로드
+- HTML - 클라이언트가 text/html을 요청하거나 ?format=html을 사용할 때의 경량 대시보드
 
-Features:
-- Cross-platform system metrics (Windows/macOS/Linux), with fallbacks where APIs are unavailable
-- Optional dependencies: psutil (for richer metrics) and redis.asyncio (for Redis health); omitted gracefully if absent
-- Authentication enforcement via `require_auth`; unauthenticated browsers see login form, API clients get JSON 401
-- Redacted environment variables, sanitized DB/Redis URLs
+기능:
+- 크로스 플랫폼 시스템 메트릭 (Windows/macOS/Linux), API를 사용할 수 없는 경우 폴백
+- 선택적 의존성: psutil (더 풍부한 메트릭용) 및 redis.asyncio (Redis 헬스용); 없으면 정상적으로 생략
+- `require_auth`를 통한 인증 강제; 인증되지 않은 브라우저는 로그인 폼을, API 클라이언트는 JSON 401을 표시
+- 수정된 환경 변수, 정리된 DB/Redis URL
 
-The module provides comprehensive system diagnostics including application info,
-platform details, database and Redis connectivity, system metrics, and environment
-variables (with secrets redacted).
+모듈은 애플리케이션 정보, 플랫폼 세부 정보, 데이터베이스 및 Redis 연결성,
+시스템 메트릭, 환경 변수(비밀이 수정됨)를 포함한 포괄적인 시스템 진단을 제공합니다.
 
-Environment variables containing the following patterns are automatically redacted:
-- Keywords: SECRET, TOKEN, PASS, KEY
-- Specific vars: BASIC_AUTH_USER, DATABASE_URL, REDIS_URL
+다음 패턴을 포함하는 환경 변수는 자동으로 수정됩니다:
+- 키워드: SECRET, TOKEN, PASS, KEY
+- 특정 변수: BASIC_AUTH_USER, DATABASE_URL, REDIS_URL
 
-Examples:
+예제:
     >>> from mcpgateway.version import _is_secret, _sanitize_url, START_TIME, HOSTNAME
     >>> _is_secret("DATABASE_PASSWORD")
     True

@@ -4,7 +4,7 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Common utilities for metrics handling across service modules.
+서비스 모듈 간 메트릭 처리를 위한 공통 유틸리티.
 """
 
 # Standard
@@ -16,22 +16,22 @@ from mcpgateway.schemas import TopPerformer
 
 def build_top_performers(results: List) -> List[TopPerformer]:
     """
-    Convert database query results to TopPerformer objects.
+    데이터베이스 쿼리 결과를 TopPerformer 객체로 변환합니다.
 
-    This utility function eliminates code duplication across service modules
-    that need to convert database query results with metrics into TopPerformer objects.
+    이 유틸리티 함수는 데이터베이스 쿼리 결과를 메트릭과 함께 TopPerformer 객체로
+    변환해야 하는 서비스 모듈 간의 코드 중복을 제거합니다.
 
     Args:
-        results: List of database query results, each containing:
-            - id: Entity ID
-            - name: Entity name
-            - execution_count: Total executions
-            - avg_response_time: Average response time
-            - success_rate: Success rate percentage
-            - last_execution: Last execution timestamp
+        results: 데이터베이스 쿼리 결과 리스트, 각 항목은 다음을 포함:
+            - id: 엔티티 ID
+            - name: 엔티티 이름
+            - execution_count: 총 실행 횟수
+            - avg_response_time: 평균 응답 시간
+            - success_rate: 성공률 백분율
+            - last_execution: 마지막 실행 타임스탬프
 
     Returns:
-        List[TopPerformer]: List of TopPerformer objects with proper type conversions
+        List[TopPerformer]: 적절한 타입 변환을 적용한 TopPerformer 객체 리스트
 
     Examples:
         >>> from unittest.mock import MagicMock

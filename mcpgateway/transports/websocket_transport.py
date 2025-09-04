@@ -4,9 +4,9 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-WebSocket Transport Implementation.
-This module implements WebSocket transport for MCP, providing
-full-duplex communication between client and server.
+WebSocket 전송 구현체.
+MCP를 위한 WebSocket 전송을 구현하며,
+클라이언트와 서버 간의 전이중 통신을 제공합니다.
 """
 
 # Standard
@@ -27,35 +27,35 @@ logger = logging_service.get_logger(__name__)
 
 
 class WebSocketTransport(Transport):
-    """Transport implementation using WebSocket.
+    """WebSocket을 사용하는 전송 구현체.
 
-    This transport implementation uses WebSocket for full-duplex communication
-    between the MCP gateway and clients. It provides real-time bidirectional
-    messaging with automatic ping/pong keepalive support.
+    이 전송 구현체는 MCP 게이트웨이와 클라이언트 간의 전이중 통신을 위해
+    WebSocket을 사용합니다. 자동 ping/pong keepalive 지원으로 실시간
+    양방향 메시징을 제공합니다.
 
-    Examples:
-        >>> # Note: WebSocket transport requires a FastAPI WebSocket object
-        >>> # and cannot be easily tested in doctest environment
+    예시:
+        >>> # 참고: WebSocket 전송은 FastAPI WebSocket 객체가 필요하며
+        >>> # doctest 환경에서 쉽게 테스트할 수 없음
         >>> from unittest.mock import Mock
         >>> mock_websocket = Mock(spec=WebSocket)
         >>> transport = WebSocketTransport(mock_websocket)
         >>> transport
         <mcpgateway.transports.websocket_transport.WebSocketTransport object at ...>
 
-        >>> # Check initial connection state
+        >>> # 초기 연결 상태 확인
         >>> transport._connected
         False
         >>> transport._ping_task is None
         True
 
-        >>> # Verify it's a proper Transport subclass
+        >>> # 올바른 Transport 서브클래스인지 확인
         >>> from mcpgateway.transports.base import Transport
         >>> isinstance(transport, Transport)
         True
         >>> issubclass(WebSocketTransport, Transport)
         True
 
-        >>> # Verify required methods exist
+        >>> # 필요한 메소드가 존재하는지 확인
         >>> hasattr(transport, 'connect')
         True
         >>> hasattr(transport, 'disconnect')
@@ -69,13 +69,13 @@ class WebSocketTransport(Transport):
     """
 
     def __init__(self, websocket: WebSocket):
-        """Initialize WebSocket transport.
+        """WebSocket 전송을 초기화합니다.
 
         Args:
-            websocket: FastAPI WebSocket connection
+            websocket: FastAPI WebSocket 연결
 
-        Examples:
-            >>> # Test initialization with mock WebSocket
+        예시:
+            >>> # 모의 WebSocket으로 초기화 테스트
             >>> from unittest.mock import Mock
             >>> mock_ws = Mock(spec=WebSocket)
             >>> transport = WebSocketTransport(mock_ws)
@@ -86,8 +86,11 @@ class WebSocketTransport(Transport):
             >>> transport._ping_task is None
             True
         """
+        # WebSocket 연결 객체 저장
         self._websocket = websocket
+        # 연결 상태 초기화
         self._connected = False
+        # ping 태스크 초기화 (연결 시 설정됨)
         self._ping_task: Optional[asyncio.Task] = None
 
     async def connect(self) -> None:

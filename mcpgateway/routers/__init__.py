@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""MCP Gateway 라우터 모듈.
+"""MCP 게이트웨이 라우터 모듈.
 
-이 패키지는 MCP Gateway의 모든 API 라우터를 포함합니다:
+이 패키지는 MCP 게이트웨이의 모든 API 라우터를 포함합니다:
 - OAuth 2.0 인증 플로우 (oauth_router)
 - 역방향 프록시 연결 (reverse_proxy)
 - 표준 웹 리소스 (well_known)

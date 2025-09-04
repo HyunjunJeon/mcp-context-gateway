@@ -12,23 +12,25 @@ MCP 게이트웨이를 위한 OAuth 라우터.
 - 토큰 관리
 """
 
-# Standard
+# Standard - 표준 라이브러리
 import logging
 from typing import Any, Dict
 
-# Third-Party
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+# Third-Party - 외부 라이브러리
+from fastapi import APIRouter, Depends, HTTPException, Query, Request  # FastAPI 라우터 및 의존성
+from fastapi.responses import HTMLResponse, RedirectResponse  # HTTP 응답 타입
+from sqlalchemy import select  # SQL 쿼리 빌더
+from sqlalchemy.orm import Session  # 데이터베이스 세션
 
-# First-Party
-from mcpgateway.db import Gateway, get_db
-from mcpgateway.services.oauth_manager import OAuthError, OAuthManager
-from mcpgateway.services.token_storage_service import TokenStorageService
+# First-Party - 내부 모듈
+from mcpgateway.db import Gateway, get_db  # 게이트웨이 모델과 DB 세션
+from mcpgateway.services.oauth_manager import OAuthError, OAuthManager  # OAuth 관리 서비스
+from mcpgateway.services.token_storage_service import TokenStorageService  # 토큰 저장소
 
+# 로거 초기화
 logger = logging.getLogger(__name__)
 
+# OAuth 라우터 생성 - /oauth 경로의 모든 엔드포인트 처리
 oauth_router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 
@@ -53,7 +55,8 @@ async def initiate_oauth_flow(gateway_id: str, request: Request, db: Session = D
             인증 코드 플로우를 사용하지 않는 경우. 시작 과정에서 예기치 않은 오류가 발생한 경우.
     """
     try:
-        # 1. 게이트웨이 구성 정보 조회
+        # 단계 1: 게이트웨이 구성 검증
+        # 데이터베이스에서 게이트웨이 정보를 조회하고 OAuth 구성 확인
         gateway = db.execute(select(Gateway).where(Gateway.id == gateway_id)).scalar_one_or_none()
 
         if not gateway:
@@ -65,18 +68,22 @@ async def initiate_oauth_flow(gateway_id: str, request: Request, db: Session = D
         if gateway.oauth_config.get("grant_type") != "authorization_code":
             raise HTTPException(status_code=400, detail="Gateway is not configured for Authorization Code flow")
 
-        # 2. OAuth 플로우 시작 - OAuth 관리자를 통해 인증 코드 플로우 초기화
+        # 단계 2: OAuth 플로우 초기화
+        # OAuth 관리자를 생성하고 인증 코드 플로우를 시작하여 인증 URL 획득
         oauth_manager = OAuthManager(token_storage=TokenStorageService(db))
         auth_data = await oauth_manager.initiate_authorization_code_flow(gateway_id, gateway.oauth_config)
 
         logger.info(f"Initiated OAuth flow for gateway {gateway_id}")
 
-        # 3. 사용자를 OAuth 제공자의 인증 URL로 리다이렉트
+        # 단계 3: 사용자 리다이렉트
+        # OAuth 제공자의 인증 페이지로 사용자를 리다이렉트
         return RedirectResponse(url=auth_data["authorization_url"])
 
     except HTTPException:
+        # HTTP 예외는 그대로 전파 (클라이언트 오류)
         raise
     except Exception as e:
+        # 예상치 못한 오류 로깅 및 서버 오류로 변환
         logger.error(f"Failed to initiate OAuth flow: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to initiate OAuth flow: {str(e)}")
 

@@ -4,9 +4,9 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-SSE Transport Implementation.
-This module implements Server-Sent Events (SSE) transport for MCP,
-providing server-to-client streaming with proper session management.
+SSE 전송 구현체.
+MCP를 위한 Server-Sent Events (SSE) 전송을 구현하며,
+적절한 세션 관리를 통해 서버에서 클라이언트로의 스트리밍을 제공합니다.
 """
 
 # Standard
@@ -31,41 +31,41 @@ logger = logging_service.get_logger(__name__)
 
 
 class SSETransport(Transport):
-    """Transport implementation using Server-Sent Events with proper session management.
+    """적절한 세션 관리를 통해 Server-Sent Events를 사용하는 전송 구현체.
 
-    This transport implementation uses Server-Sent Events (SSE) for real-time
-    communication between the MCP gateway and clients. It provides streaming
-    capabilities with automatic session management and keepalive support.
+    이 전송 구현체는 MCP 게이트웨이와 클라이언트 간의 실시간 통신을 위해
+    Server-Sent Events (SSE)를 사용합니다. 자동 세션 관리와 keepalive 지원으로
+    스트리밍 기능을 제공합니다.
 
-    Examples:
-        >>> # Create SSE transport with default URL
+    예시:
+        >>> # 기본 URL로 SSE 전송 생성
         >>> transport = SSETransport()
         >>> transport
         <mcpgateway.transports.sse_transport.SSETransport object at ...>
 
-        >>> # Create SSE transport with custom URL
+        >>> # 사용자 정의 URL로 SSE 전송 생성
         >>> transport = SSETransport("http://localhost:8080")
         >>> transport._base_url
         'http://localhost:8080'
 
-        >>> # Check initial connection state
+        >>> # 초기 연결 상태 확인
         >>> import asyncio
         >>> asyncio.run(transport.is_connected())
         False
 
-        >>> # Verify it's a proper Transport subclass
+        >>> # 올바른 Transport 서브클래스인지 확인
         >>> isinstance(transport, Transport)
         True
         >>> issubclass(SSETransport, Transport)
         True
 
-        >>> # Check session ID generation
+        >>> # 세션 ID 생성 확인
         >>> transport.session_id
         '...'
         >>> len(transport.session_id) > 0
         True
 
-        >>> # Verify required methods exist
+        >>> # 필요한 메소드가 존재하는지 확인
         >>> hasattr(transport, 'connect')
         True
         >>> hasattr(transport, 'disconnect')
@@ -79,13 +79,13 @@ class SSETransport(Transport):
     """
 
     def __init__(self, base_url: str = None):
-        """Initialize SSE transport.
+        """SSE 전송을 초기화합니다.
 
         Args:
-            base_url: Base URL for client message endpoints
+            base_url: 클라이언트 메시지 엔드포인트를 위한 기본 URL
 
-        Examples:
-            >>> # Test default initialization
+        예시:
+            >>> # 기본 초기화 테스트
             >>> transport = SSETransport()
             >>> transport._connected
             False
@@ -96,30 +96,35 @@ class SSETransport(Transport):
             >>> len(transport._session_id) > 0
             True
 
-            >>> # Test custom base URL
+            >>> # 사용자 정의 기본 URL 테스트
             >>> transport = SSETransport("https://api.example.com")
             >>> transport._base_url
             'https://api.example.com'
 
-            >>> # Test session ID uniqueness
+            >>> # 세션 ID 고유성 테스트
             >>> transport1 = SSETransport()
             >>> transport2 = SSETransport()
             >>> transport1.session_id != transport2.session_id
             True
         """
+        # 기본 URL 설정 (제공되지 않은 경우 설정에서 가져옴)
         self._base_url = base_url or f"http://{settings.host}:{settings.port}"
+        # 연결 상태 초기화
         self._connected = False
+        # 메시지 큐 생성 (비동기 통신용)
         self._message_queue = asyncio.Queue()
+        # 클라이언트 연결 종료 이벤트
         self._client_gone = asyncio.Event()
+        # 고유 세션 ID 생성
         self._session_id = str(uuid.uuid4())
 
-        logger.info(f"Creating SSE transport with base_url={self._base_url}, session_id={self._session_id}")
+        logger.info(f"SSE 전송 생성: base_url={self._base_url}, session_id={self._session_id}")
 
     async def connect(self) -> None:
-        """Set up SSE connection.
+        """SSE 연결을 설정합니다.
 
-        Examples:
-            >>> # Test connection setup
+        예시:
+            >>> # 연결 설정 테스트
             >>> transport = SSETransport()
             >>> import asyncio
             >>> asyncio.run(transport.connect())
@@ -128,14 +133,15 @@ class SSETransport(Transport):
             >>> asyncio.run(transport.is_connected())
             True
         """
+        # 연결 상태를 True로 설정
         self._connected = True
-        logger.info(f"SSE transport connected: {self._session_id}")
+        logger.info(f"SSE 전송 연결됨: {self._session_id}")
 
     async def disconnect(self) -> None:
-        """Clean up SSE connection.
+        """SSE 연결을 정리합니다.
 
-        Examples:
-            >>> # Test disconnection
+        예시:
+            >>> # 연결 해제 테스트
             >>> transport = SSETransport()
             >>> import asyncio
             >>> asyncio.run(transport.connect())
@@ -147,28 +153,31 @@ class SSETransport(Transport):
             >>> asyncio.run(transport.is_connected())
             False
 
-            >>> # Test disconnection when already disconnected
+            >>> # 이미 연결 해제된 상태에서 테스트
             >>> transport = SSETransport()
             >>> asyncio.run(transport.disconnect())
             >>> transport._connected
             False
         """
+        # 연결된 상태인 경우에만 정리 작업 수행
         if self._connected:
+            # 연결 상태 해제
             self._connected = False
+            # 클라이언트 연결 종료 이벤트 설정
             self._client_gone.set()
-            logger.info(f"SSE transport disconnected: {self._session_id}")
+            logger.info(f"SSE 전송 연결 해제됨: {self._session_id}")
 
     async def send_message(self, message: Dict[str, Any]) -> None:
-        """Send a message over SSE.
+        """SSE를 통해 메시지를 보냅니다.
 
         Args:
-            message: Message to send
+            message: 보낼 메시지
 
         Raises:
-            RuntimeError: If transport is not connected
-            Exception: If unable to put message to queue
+            RuntimeError: 전송이 연결되지 않은 경우
+            Exception: 큐에 메시지를 넣을 수 없는 경우
 
-        Examples:
+        예시:
             >>> # Test sending message when connected
             >>> transport = SSETransport()
             >>> import asyncio
@@ -208,39 +217,41 @@ class SSETransport(Transport):
             ...     print("Queue full as expected")
             Queue full as expected
         """
+        # 전송이 연결되어 있는지 확인
         if not self._connected:
-            raise RuntimeError("Transport not connected")
+            raise RuntimeError("전송이 연결되지 않음")
 
         try:
+            # 메시지를 큐에 추가하여 SSE 스트리밍을 위해 준비
             await self._message_queue.put(message)
-            logger.debug(f"Message queued for SSE: {self._session_id}, method={message.get('method', '(response)')}")
+            logger.debug(f"SSE용 메시지 큐에 추가됨: {self._session_id}, method={message.get('method', '(response)')}")
         except Exception as e:
-            logger.error(f"Failed to queue message: {e}")
+            logger.error(f"메시지 큐에 추가 실패: {e}")
             raise
 
     async def receive_message(self) -> AsyncGenerator[Dict[str, Any], None]:
-        """Receive messages from the client over SSE transport.
+        """SSE 전송을 통해 클라이언트로부터 메시지를 수신합니다.
 
-        This method implements a continuous message-receiving pattern for SSE transport.
-        Since SSE is primarily a server-to-client communication channel, this method
-        yields an initial initialize placeholder message and then enters a waiting loop.
-        The actual client messages are received via a separate HTTP POST endpoint
-        (not handled in this method).
+        이 메소드는 SSE 전송을 위한 지속적인 메시지 수신 패턴을 구현합니다.
+        SSE가 주로 서버에서 클라이언트로의 통신 채널이므로, 이 메소드는
+        초기 initialize 플레이스홀더 메시지를 yield한 후 대기 루프에 진입합니다.
+        실제 클라이언트 메시지는 별도의 HTTP POST 엔드포인트를 통해 수신됩니다
+        (이 메소드에서는 처리하지 않음).
 
-        The method will continue running until either:
-        1. The connection is explicitly disconnected (client_gone event is set)
-        2. The receive loop is cancelled from outside
+        다음 중 하나가 발생할 때까지 메소드가 계속 실행됩니다:
+        1. 연결이 명시적으로 해제될 때 (client_gone 이벤트가 설정됨)
+        2. 외부에서 수신 루프가 취소될 때
 
         Yields:
-            Dict[str, Any]: JSON-RPC formatted messages. The first yielded message is always
-                an initialize placeholder with the format:
+            Dict[str, Any]: JSON-RPC 형식의 메시지. 첫 번째로 yield되는 메시지는 항상
+                다음과 같은 형식의 initialize 플레이스홀더입니다:
                 {"jsonrpc": "2.0", "method": "initialize", "id": 1}
 
         Raises:
-            RuntimeError: If the transport is not connected when this method is called
-            asyncio.CancelledError: When the SSE receive loop is cancelled externally
+            RuntimeError: 이 메소드가 호출될 때 전송이 연결되지 않은 경우
+            asyncio.CancelledError: SSE 수신 루프가 외부에서 취소될 때
 
-        Examples:
+        예시:
             >>> # Test receive message when connected
             >>> transport = SSETransport()
             >>> import asyncio
@@ -270,44 +281,46 @@ class SSETransport(Transport):
             >>> inspect.isasyncgenfunction(transport.receive_message)
             True
         """
+        # 전송이 연결되어 있는지 확인
         if not self._connected:
-            raise RuntimeError("Transport not connected")
+            raise RuntimeError("전송이 연결되지 않음")
 
-        # For SSE, we set up a loop to wait for messages which are delivered via POST
-        # Most messages come via the POST endpoint, but we yield an initial initialize placeholder
-        # to keep the receive loop running
+        # SSE의 경우 POST를 통해 전달되는 메시지를 기다리는 루프를 설정
+        # 대부분의 메시지는 POST 엔드포인트를 통해 오지만, 수신 루프를 유지하기 위해
+        # 초기 initialize 플레이스홀더를 yield함
         yield {"jsonrpc": "2.0", "method": "initialize", "id": 1}
 
-        # Continue waiting for cancellation
+        # 취소될 때까지 계속 대기
         try:
+            # 클라이언트 연결이 종료되지 않은 동안 계속 대기
             while not self._client_gone.is_set():
                 await asyncio.sleep(1.0)
         except asyncio.CancelledError:
-            logger.info(f"SSE receive loop cancelled for session {self._session_id}")
+            logger.info(f"SSE 수신 루프 취소됨: 세션 {self._session_id}")
             raise
         finally:
-            logger.info(f"SSE receive loop ended for session {self._session_id}")
+            logger.info(f"SSE 수신 루프 종료됨: 세션 {self._session_id}")
 
     async def is_connected(self) -> bool:
-        """Check if transport is connected.
+        """전송이 연결되어 있는지 확인합니다.
 
         Returns:
-            True if connected
+            연결되어 있다면 True
 
-        Examples:
-            >>> # Test initial state
+        예시:
+            >>> # 초기 상태 테스트
             >>> transport = SSETransport()
             >>> import asyncio
             >>> asyncio.run(transport.is_connected())
             False
 
-            >>> # Test after connection
+            >>> # 연결 후 테스트
             >>> transport = SSETransport()
             >>> asyncio.run(transport.connect())
             >>> asyncio.run(transport.is_connected())
             True
 
-            >>> # Test after disconnection
+            >>> # 연결 해제 후 테스트
             >>> transport = SSETransport()
             >>> asyncio.run(transport.connect())
             >>> asyncio.run(transport.disconnect())
@@ -317,38 +330,39 @@ class SSETransport(Transport):
         return self._connected
 
     async def create_sse_response(self, _request: Request) -> EventSourceResponse:
-        """Create SSE response for streaming.
+        """스트리밍을 위한 SSE 응답을 생성합니다.
 
         Args:
-            _request: FastAPI request
+            _request: FastAPI 요청 객체
 
         Returns:
-            SSE response object
+            SSE 응답 객체
 
-        Examples:
-            >>> # Test SSE response creation
+        예시:
+            >>> # SSE 응답 생성 테스트
             >>> transport = SSETransport("http://localhost:8000")
-            >>> # Note: This method requires a FastAPI Request object
-            >>> # and cannot be easily tested in doctest environment
+            >>> # 이 메소드는 FastAPI Request 객체가 필요하며
+            >>> # doctest 환경에서 쉽게 테스트할 수 없음
             >>> callable(transport.create_sse_response)
             True
         """
+        # 세션 ID를 포함한 메시지 엔드포인트 URL 생성
         endpoint_url = f"{self._base_url}/message?session_id={self._session_id}"
 
         async def event_generator():
-            """Generate SSE events.
+            """SSE 이벤트를 생성합니다.
 
             Yields:
-                SSE event
+                SSE 이벤트
             """
-            # Send the endpoint event first
+            # 먼저 엔드포인트 이벤트를 전송
             yield {
                 "event": "endpoint",
                 "data": endpoint_url,
                 "retry": settings.sse_retry_timeout,
             }
 
-            # Send keepalive immediately to help establish connection (if enabled)
+            # 연결 수립을 돕기 위해 즉시 keepalive 전송 (활성화된 경우)
             if settings.sse_keepalive_enabled:
                 yield {
                     "event": "keepalive",
@@ -357,19 +371,21 @@ class SSETransport(Transport):
                 }
 
             try:
+                # 클라이언트 연결이 종료되지 않은 동안 계속 실행
                 while not self._client_gone.is_set():
                     try:
-                        # Wait for messages with a timeout for keepalives
+                        # keepalive를 위한 타임아웃과 함께 메시지 대기
                         timeout = settings.sse_keepalive_interval if settings.sse_keepalive_enabled else None
                         message = await asyncio.wait_for(
                             self._message_queue.get(),
-                            timeout=timeout,  # Configurable timeout for keepalives (some tools require more timeout for execution)
+                            timeout=timeout,  # keepalive를 위한 구성 가능한 타임아웃 (일부 도구는 실행에 더 많은 타임아웃이 필요함)
                         )
 
-                        data = json.dumps(message, default=lambda obj: (obj.strftime("%Y-%m-%d %H:%M:%S") if isinstance(obj, datetime) else TypeError("Type not serializable")))
+                        # datetime 객체를 포함한 메시지를 JSON으로 직렬화
+                        data = json.dumps(message, default=lambda obj: (obj.strftime("%Y-%m-%d %H:%M:%S") if isinstance(obj, datetime) else TypeError("직렬화할 수 없는 타입")))
 
                         # logger.info(f"Sending SSE message: {data[:100]}...")
-                        logger.debug(f"Sending SSE message: {data}")
+                        logger.debug(f"SSE 메시지 전송: {data}")
 
                         yield {
                             "event": "message",
@@ -377,7 +393,7 @@ class SSETransport(Transport):
                             "retry": settings.sse_retry_timeout,
                         }
                     except asyncio.TimeoutError:
-                        # Send keepalive on timeout (if enabled)
+                        # 타임아웃 시 keepalive 전송 (활성화된 경우)
                         if settings.sse_keepalive_enabled:
                             yield {
                                 "event": "keepalive",
@@ -385,68 +401,68 @@ class SSETransport(Transport):
                                 "retry": settings.sse_retry_timeout,
                             }
                     except Exception as e:
-                        logger.error(f"Error processing SSE message: {e}")
+                        logger.error(f"SSE 메시지 처리 오류: {e}")
                         yield {
                             "event": "error",
                             "data": json.dumps({"error": str(e)}),
                             "retry": settings.sse_retry_timeout,
                         }
             except asyncio.CancelledError:
-                logger.info(f"SSE event generator cancelled: {self._session_id}")
+                logger.info(f"SSE 이벤트 생성기 취소됨: {self._session_id}")
             except Exception as e:
-                logger.error(f"SSE event generator error: {e}")
+                logger.error(f"SSE 이벤트 생성기 오류: {e}")
             finally:
-                logger.info(f"SSE event generator completed: {self._session_id}")
-                # We intentionally don't set client_gone here to allow queued messages to be processed
+                logger.info(f"SSE 이벤트 생성기 완료됨: {self._session_id}")
+                # 큐에 있는 메시지 처리를 허용하기 위해 의도적으로 client_gone을 설정하지 않음
 
+        # SSE 응답 생성 및 반환
         return EventSourceResponse(
             event_generator(),
             status_code=200,
             headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Content-Type": "text/event-stream",
-                "X-MCP-SSE": "true",
+                "Cache-Control": "no-cache",      # 캐시 방지
+                "Connection": "keep-alive",       # 연결 유지
+                "Content-Type": "text/event-stream",  # SSE 콘텐츠 타입
+                "X-MCP-SSE": "true",             # MCP SSE 식별자
             },
         )
 
     async def _client_disconnected(self, _request: Request) -> bool:
-        """Check if client has disconnected.
+        """클라이언트 연결이 해제되었는지 확인합니다.
 
         Args:
-            _request: FastAPI Request object
+            _request: FastAPI Request 객체
 
         Returns:
-            bool: True if client disconnected
+            bool: 클라이언트 연결이 해제되었으면 True
 
-        Examples:
-            >>> # Test client disconnected check
+        예시:
+            >>> # 클라이언트 연결 해제 확인 테스트
             >>> transport = SSETransport()
             >>> import asyncio
             >>> asyncio.run(transport._client_disconnected(None))
             False
 
-            >>> # Test after setting client gone
+            >>> # client_gone 설정 후 테스트
             >>> transport = SSETransport()
             >>> transport._client_gone.set()
             >>> asyncio.run(transport._client_disconnected(None))
             True
         """
-        # We only check our internal client_gone flag
-        # We intentionally don't check connection_lost on the request
-        # as it can be unreliable and cause premature closures
+        # 내부 client_gone 플래그만 확인
+        # 요청의 connection_lost를 확인하지 않음 (신뢰할 수 없고 조기 종료를 유발할 수 있음)
         return self._client_gone.is_set()
 
     @property
     def session_id(self) -> str:
         """
-        Get the session ID for this transport.
+        이 전송의 세션 ID를 가져옵니다.
 
         Returns:
-            str: session_id
+            str: 세션 ID
 
-        Examples:
-            >>> # Test session ID property
+        예시:
+            >>> # 세션 ID 프로퍼티 테스트
             >>> transport = SSETransport()
             >>> session_id = transport.session_id
             >>> isinstance(session_id, str)
@@ -456,7 +472,7 @@ class SSETransport(Transport):
             >>> session_id == transport._session_id
             True
 
-            >>> # Test session ID uniqueness
+            >>> # 세션 ID 고유성 테스트
             >>> transport1 = SSETransport()
             >>> transport2 = SSETransport()
             >>> transport1.session_id != transport2.session_id

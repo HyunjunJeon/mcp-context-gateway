@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/schemas.py
-Copyright 2025
+"""위치: ./mcpgateway/schemas.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-MCP Gateway Schema Definitions.
-This module provides Pydantic models for request/response validation in the MCP Gateway.
-It implements schemas for:
-- Tool registration and invocation
-- Resource management and subscriptions
-- Prompt templates and arguments
-- Gateway federation
-- RPC message formats
-- Event messages
-- Admin interface
+MCP 게이트웨이 스키마 정의.
+이 모듈은 MCP 게이트웨이에서 요청/응답 검증을 위한 Pydantic 모델을 제공합니다.
+다음 항목들을 위한 스키마를 구현합니다:
+- 도구 등록 및 호출
+- 리소스 관리 및 구독
+- 프롬프트 템플릿 및 인자
+- 게이트웨이 페데레이션
+- RPC 메시지 형식
+- 이벤트 메시지
+- 관리 인터페이스
 
-The schemas ensure proper validation according to the MCP specification while adding
-gateway-specific extensions for federation support.
+스키마는 MCP 사양에 따른 적절한 검증을 보장하면서
+페데레이션 지원을 위한 게이트웨이별 확장을 추가합니다.
 """
 
 # Standard
@@ -47,13 +47,13 @@ logger = logging.getLogger(__name__)
 
 def to_camel_case(s: str) -> str:
     """
-    Convert a string from snake_case to camelCase.
+    문자열을 snake_case에서 camelCase로 변환합니다.
 
     Args:
-        s (str): The string to be converted, which is assumed to be in snake_case.
+        s (str): 변환할 문자열로, snake_case 형식이라고 가정합니다.
 
     Returns:
-        str: The string converted to camelCase.
+        str: camelCase로 변환된 문자열.
 
     Examples:
         >>> to_camel_case("hello_world_example")
@@ -69,18 +69,19 @@ def to_camel_case(s: str) -> str:
         >>> to_camel_case("trailing_underscore_")
         'trailingUnderscore'
     """
+    # snake_case를 '_'로 분리하고 첫 단어를 제외한 나머지 단어들을 대문자로 시작하도록 변환
     return "".join(word.capitalize() if i else word for i, word in enumerate(s.split("_")))
 
 
 def encode_datetime(v: datetime) -> str:
     """
-    Convert a datetime object to an ISO 8601 formatted string.
+    datetime 객체를 ISO 8601 형식의 문자열로 변환합니다.
 
     Args:
-        v (datetime): The datetime object to be encoded.
+        v (datetime): 인코딩할 datetime 객체.
 
     Returns:
-        str: The ISO 8601 formatted string representation of the datetime object.
+        str: datetime 객체의 ISO 8601 형식 문자열 표현.
 
     Examples:
         >>> from datetime import datetime
@@ -92,34 +93,34 @@ def encode_datetime(v: datetime) -> str:
 
 # --- Base Model ---
 class BaseModelWithConfigDict(BaseModel):
-    """Base model with common configuration.
+    """공통 구성으로 기본 모델.
 
-    Provides:
-    - ORM mode for SQLAlchemy integration
-    - JSON encoders for datetime handling
-    - Automatic conversion from snake_case to camelCase for output
+    제공하는 기능들:
+    - SQLAlchemy 통합을 위한 ORM 모드
+    - datetime 처리를 위한 JSON 인코더
+    - 출력 시 snake_case에서 camelCase로 자동 변환
     """
 
     model_config = ConfigDict(
-        from_attributes=True,
-        alias_generator=to_camel_case,
-        populate_by_name=True,
-        use_enum_values=True,
-        extra="ignore",
-        json_schema_extra={"nullable": True},
+        from_attributes=True,  # SQLAlchemy 모델에서 속성 읽기 허용
+        alias_generator=to_camel_case,  # 필드명을 camelCase로 변환
+        populate_by_name=True,  # 필드명으로 모델 생성 허용
+        use_enum_values=True,  # 열거형 값을 실제 값으로 사용
+        extra="ignore",  # 추가 필드 무시
+        json_schema_extra={"nullable": True},  # JSON 스키마에 nullable 속성 추가
     )
 
     def to_dict(self, use_alias: bool = False) -> Dict[str, Any]:
         """
-        Converts the model instance into a dictionary representation.
+        모델 인스턴스를 사전 표현으로 변환합니다.
 
         Args:
-            use_alias (bool): Whether to use aliases for field names (default is False). If True,
-                               field names will be converted using the alias generator function.
+            use_alias (bool): 필드명에 별칭을 사용할지 여부 (기본값은 False).
+                              True인 경우 별칭 생성자 함수를 사용하여 필드명이 변환됩니다.
 
         Returns:
-            Dict[str, Any]: A dictionary where keys are field names and values are corresponding field values,
-                             with any nested models recursively converted to dictionaries.
+            Dict[str, Any]: 키가 필드명이고 값이 해당 필드 값인 사전.
+                            중첩된 모델들은 재귀적으로 사전으로 변환됩니다.
 
         Examples:
             >>> class ExampleModel(BaseModelWithConfigDict):
@@ -129,11 +130,11 @@ class BaseModelWithConfigDict(BaseModel):
             >>> m.to_dict()
             {'foo': 1, 'bar': 'baz'}
 
-            >>> # Test with alias
+            >>> # 별칭 사용 테스트
             >>> m.to_dict(use_alias=True)
             {'foo': 1, 'bar': 'baz'}
 
-            >>> # Test with nested model
+            >>> # 중첩 모델 테스트
             >>> class NestedModel(BaseModelWithConfigDict):
             ...     nested_field: int
             >>> class ParentModel(BaseModelWithConfigDict):
@@ -146,7 +147,9 @@ class BaseModelWithConfigDict(BaseModel):
             {'nested_field': 42}
         """
         output = {}
+        # 모델을 사전으로 덤프하고 각 필드 처리
         for key, value in self.model_dump(by_alias=use_alias).items():
+            # BaseModel 인스턴스인 경우 재귀적으로 변환, 그렇지 않으면 그대로 사용
             output[key] = value if not isinstance(value, BaseModel) else value.to_dict(use_alias)
         return output
 
@@ -156,52 +159,52 @@ class BaseModelWithConfigDict(BaseModel):
 
 class ToolMetrics(BaseModelWithConfigDict):
     """
-    Represents the performance and execution statistics for a tool.
+    도구의 성능 및 실행 통계를 나타냅니다.
 
     Attributes:
-        total_executions (int): Total number of tool invocations.
-        successful_executions (int): Number of successful tool invocations.
-        failed_executions (int): Number of failed tool invocations.
-        failure_rate (float): Failure rate (failed invocations / total invocations).
-        min_response_time (Optional[float]): Minimum response time in seconds.
-        max_response_time (Optional[float]): Maximum response time in seconds.
-        avg_response_time (Optional[float]): Average response time in seconds.
-        last_execution_time (Optional[datetime]): Timestamp of the most recent invocation.
+        total_executions (int): 도구 호출의 총 횟수.
+        successful_executions (int): 성공한 도구 호출의 횟수.
+        failed_executions (int): 실패한 도구 호출의 횟수.
+        failure_rate (float): 실패율 (실패한 호출 / 총 호출).
+        min_response_time (Optional[float]): 최소 응답 시간 (초 단위).
+        max_response_time (Optional[float]): 최대 응답 시간 (초 단위).
+        avg_response_time (Optional[float]): 평균 응답 시간 (초 단위).
+        last_execution_time (Optional[datetime]): 가장 최근 호출의 타임스탬프.
     """
 
-    total_executions: int = Field(..., description="Total number of tool invocations")
-    successful_executions: int = Field(..., description="Number of successful tool invocations")
-    failed_executions: int = Field(..., description="Number of failed tool invocations")
-    failure_rate: float = Field(..., description="Failure rate (failed invocations / total invocations)")
-    min_response_time: Optional[float] = Field(None, description="Minimum response time in seconds")
-    max_response_time: Optional[float] = Field(None, description="Maximum response time in seconds")
-    avg_response_time: Optional[float] = Field(None, description="Average response time in seconds")
-    last_execution_time: Optional[datetime] = Field(None, description="Timestamp of the most recent invocation")
+    total_executions: int = Field(..., description="도구 호출의 총 횟수")
+    successful_executions: int = Field(..., description="성공한 도구 호출의 횟수")
+    failed_executions: int = Field(..., description="실패한 도구 호출의 횟수")
+    failure_rate: float = Field(..., description="실패율 (실패한 호출 / 총 호출)")
+    min_response_time: Optional[float] = Field(None, description="최소 응답 시간 (초 단위)")
+    max_response_time: Optional[float] = Field(None, description="최대 응답 시간 (초 단위)")
+    avg_response_time: Optional[float] = Field(None, description="평균 응답 시간 (초 단위)")
+    last_execution_time: Optional[datetime] = Field(None, description="가장 최근 호출의 타임스탬프")
 
 
 class ResourceMetrics(BaseModelWithConfigDict):
     """
-    Represents the performance and execution statistics for a resource.
+    리소스의 성능 및 실행 통계를 나타냅니다.
 
     Attributes:
-        total_executions (int): Total number of resource invocations.
-        successful_executions (int): Number of successful resource invocations.
-        failed_executions (int): Number of failed resource invocations.
-        failure_rate (float): Failure rate (failed invocations / total invocations).
-        min_response_time (Optional[float]): Minimum response time in seconds.
-        max_response_time (Optional[float]): Maximum response time in seconds.
-        avg_response_time (Optional[float]): Average response time in seconds.
-        last_execution_time (Optional[datetime]): Timestamp of the most recent invocation.
+        total_executions (int): 리소스 호출의 총 횟수.
+        successful_executions (int): 성공한 리소스 호출의 횟수.
+        failed_executions (int): 실패한 리소스 호출의 횟수.
+        failure_rate (float): 실패율 (실패한 호출 / 총 호출).
+        min_response_time (Optional[float]): 최소 응답 시간 (초 단위).
+        max_response_time (Optional[float]): 최대 응답 시간 (초 단위).
+        avg_response_time (Optional[float]): 평균 응답 시간 (초 단위).
+        last_execution_time (Optional[datetime]): 가장 최근 호출의 타임스탬프.
     """
 
-    total_executions: int = Field(..., description="Total number of resource invocations")
-    successful_executions: int = Field(..., description="Number of successful resource invocations")
-    failed_executions: int = Field(..., description="Number of failed resource invocations")
-    failure_rate: float = Field(..., description="Failure rate (failed invocations / total invocations)")
-    min_response_time: Optional[float] = Field(None, description="Minimum response time in seconds")
-    max_response_time: Optional[float] = Field(None, description="Maximum response time in seconds")
-    avg_response_time: Optional[float] = Field(None, description="Average response time in seconds")
-    last_execution_time: Optional[datetime] = Field(None, description="Timestamp of the most recent invocation")
+    total_executions: int = Field(..., description="리소스 호출의 총 횟수")
+    successful_executions: int = Field(..., description="성공한 리소스 호출의 횟수")
+    failed_executions: int = Field(..., description="실패한 리소스 호출의 횟수")
+    failure_rate: float = Field(..., description="실패율 (실패한 호출 / 총 호출)")
+    min_response_time: Optional[float] = Field(None, description="최소 응답 시간 (초 단위)")
+    max_response_time: Optional[float] = Field(None, description="최대 응답 시간 (초 단위)")
+    avg_response_time: Optional[float] = Field(None, description="평균 응답 시간 (초 단위)")
+    last_execution_time: Optional[datetime] = Field(None, description="가장 최근 호출의 타임스탬프")
 
 
 class ServerMetrics(BaseModelWithConfigDict):

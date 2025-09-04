@@ -1,40 +1,39 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/wrapper.py
-Copyright 2025
+"""위치: ./mcpgateway/wrapper.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Keval Mahajan
+저자: Keval Mahajan
 
-MCP Gateway Wrapper.
-MCP Client (stdio) <-> MCP Gateway Bridge
+MCP 게이트웨이 래퍼.
+MCP 클라이언트 (stdio) <-> MCP 게이트웨이 브리지
 
-This module implements a wrapper stdio bridge that facilitates
-interaction between the MCP client and the MCP gateway.
-It provides several functionalities, including listing tools,
-invoking tools, managing resources, retrieving prompts,
-and handling tool calls via the MCP gateway.
+이 모듈은 MCP 클라이언트와 MCP 게이트웨이 간의 상호작용을
+촉진하는 래퍼 stdio 브리지를 구현합니다.
+도구 목록, 도구 호출, 리소스 관리, 프롬프트 검색,
+MCP 게이트웨이를 통한 도구 호출 처리 등의 여러 기능을 제공합니다.
 
-- All JSON-RPC traffic is written to stdout.
-- All logs/diagnostics are written to stderr, ensuring clean separation.
+- 모든 JSON-RPC 트래픽은 stdout에 기록됩니다.
+- 모든 로그/진단은 stderr에 기록되어 깔끔한 분리를 보장합니다.
 
-Environment Variables
----------------------
-- **MCP_SERVER_URL** (or `--url`): Gateway MCP endpoint URL.
-- **MCP_AUTH** (or `--auth`): Authorization header value.
-- **MCP_TOOL_CALL_TIMEOUT** (or `--timeout`): Response timeout in seconds (default: 60).
-- **MCP_WRAPPER_LOG_LEVEL** (or `--log-level`): Logging level, or OFF to disable.
-- **CONCURRENCY**: Max concurrent tool calls (default: 10).
+환경 변수
+---------
+- **MCP_SERVER_URL** (또는 `--url`): 게이트웨이 MCP 엔드포인트 URL.
+- **MCP_AUTH** (또는 `--auth`): 인증 헤더 값.
+- **MCP_TOOL_CALL_TIMEOUT** (또는 `--timeout`): 응답 타임아웃 (초 단위, 기본값: 60).
+- **MCP_WRAPPER_LOG_LEVEL** (또는 `--log-level`): 로깅 레벨, 또는 OFF로 비활성화.
+- **CONCURRENCY**: 최대 동시 도구 호출 수 (기본값: 10).
 
-Example usage:
---------------
+사용 예시:
+---------
 
-Method 1: Using environment variables
+방법 1: 환경 변수 사용
     $ export MCP_SERVER_URL='http://localhost:4444/servers/UUID/mcp'
     $ export MCP_AUTH='Bearer <token>'
     $ export MCP_TOOL_CALL_TIMEOUT=120
     $ export MCP_WRAPPER_LOG_LEVEL=DEBUG
     $ python3 -m mcpgateway.wrapper
 
-Method 2: Using command-line arguments
+방법 2: 명령줄 인자 사용
     $ python3 -m mcpgateway.wrapper --url 'http://localhost:4444/servers/UUID/mcp' --auth 'Bearer <token>' --timeout 120 --log-level DEBUG
 """
 

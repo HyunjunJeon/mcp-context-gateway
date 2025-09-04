@@ -4,24 +4,22 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Session Registry with optional distributed state.
-This module provides a registry for SSE sessions with support for distributed deployment
-using Redis or SQLAlchemy as optional backends for shared state between workers.
+선택적 분산 상태를 지원하는 세션 레지스트리.
+Redis 또는 SQLAlchemy를 선택적 백엔드로 사용하여 분산 배포에서 공유 상태를 지원하는 SSE 세션 레지스트리를 제공합니다.
 
-The SessionRegistry class manages server-sent event (SSE) sessions across multiple
-worker processes, enabling horizontal scaling of MCP gateway deployments. It supports
-three backend modes:
+SessionRegistry 클래스는 여러 워커 프로세스에서 서버 전송 이벤트(SSE) 세션을 관리하여
+MCP 게이트웨이 배포의 수평 확장을 가능하게 합니다. 세 가지 백엔드 모드를 지원합니다:
 
-- **memory**: In-memory storage for single-process deployments (default)
-- **redis**: Redis-backed shared storage for multi-worker deployments
-- **database**: SQLAlchemy-backed shared storage using any supported database
+- **memory**: 단일 프로세스 배포용 메모리 기반 저장소 (기본값)
+- **redis**: 다중 워커 배포용 Redis 지원 공유 저장소
+- **database**: 다중 워커 배포용 SQLAlchemy 지원 공유 저장소
 
-In distributed mode (redis/database), session existence is tracked in the shared
-backend while transport objects remain local to each worker process. This allows
-workers to know about sessions on other workers and route messages appropriately.
+분산 모드(redis/database)에서는 세션 존재가 공유 백엔드에서 추적되는 반면,
+전송 객체는 각 워커 프로세스에 로컬로 유지됩니다. 이를 통해 워커들은 다른 워커의 세션에 대해
+알고 메시지를 적절하게 라우팅할 수 있습니다.
 
-Examples:
-    Basic usage with memory backend:
+사용 예시:
+    메모리 백엔드 기본 사용법:
 
     >>> from mcpgateway.cache.session_registry import SessionRegistry
     >>> class DummyTransport:
@@ -40,7 +38,7 @@ Examples:
     >>> asyncio.run(reg.get_session('sid123')) is None
     True
 
-    Broadcasting messages:
+    메시지 브로드캐스팅:
 
     >>> reg = SessionRegistry(backend='memory')
     >>> asyncio.run(reg.broadcast('sid123', {'method': 'ping', 'id': 1}))
@@ -95,21 +93,20 @@ except ImportError:
 
 
 class SessionBackend:
-    """Base class for session registry backend configuration.
+    """세션 레지스트리 백엔드 구성의 기본 클래스.
 
-    This class handles the initialization and configuration of different backend
-    types for session storage. It validates backend requirements and sets up
-    necessary connections for Redis or database backends.
+    이 클래스는 세션 저장을 위한 다양한 백엔드 타입의 초기화 및 구성을 처리합니다.
+    Redis 또는 데이터베이스 백엔드에 필요한 연결을 설정하고 백엔드 요구사항을 검증합니다.
 
-    Attributes:
-        _backend: The backend type ('memory', 'redis', 'database', or 'none')
-        _session_ttl: Time-to-live for sessions in seconds
-        _message_ttl: Time-to-live for messages in seconds
-        _redis: Redis connection instance (redis backend only)
-        _pubsub: Redis pubsub instance (redis backend only)
-        _session_message: Temporary message storage (memory backend only)
+    속성:
+        _backend: 백엔드 타입 ('memory', 'redis', 'database', 또는 'none')
+        _session_ttl: 세션의 생존 시간 (초 단위)
+        _message_ttl: 메시지의 생존 시간 (초 단위)
+        _redis: Redis 연결 인스턴스 (redis 백엔드 전용)
+        _pubsub: Redis pubsub 인스턴스 (redis 백엔드 전용)
+        _session_message: 임시 메시지 저장소 (memory 백엔드 전용)
 
-    Examples:
+    사용 예시:
         >>> backend = SessionBackend(backend='memory')
         >>> backend._backend
         'memory'
@@ -131,40 +128,41 @@ class SessionBackend:
         session_ttl: int = 3600,  # 1 hour
         message_ttl: int = 600,  # 10 min
     ):
-        """Initialize session backend configuration.
+        """세션 백엔드 구성을 초기화.
 
         Args:
-            backend: Backend type. Must be one of 'memory', 'redis', 'database', or 'none'.
-                - 'memory': In-memory storage, suitable for single-process deployments
-                - 'redis': Redis-backed storage for multi-worker deployments
-                - 'database': SQLAlchemy-backed storage for multi-worker deployments
-                - 'none': No session tracking (dummy registry)
-            redis_url: Redis connection URL. Required when backend='redis'.
-                Format: 'redis://[:password]@host:port/db'
-            database_url: Database connection URL. Required when backend='database'.
-                Format depends on database type (e.g., 'postgresql://user:pass@host/db')
-            session_ttl: Session time-to-live in seconds. Sessions are automatically
-                cleaned up after this duration of inactivity. Default: 3600 (1 hour).
-            message_ttl: Message time-to-live in seconds. Undelivered messages are
-                removed after this duration. Default: 600 (10 minutes).
+            backend: 백엔드 타입. 'memory', 'redis', 'database', 'none' 중 하나여야 함.
+                - 'memory': 메모리 기반 저장소, 단일 프로세스 배포에 적합
+                - 'redis': Redis 지원 저장소, 다중 워커 배포용
+                - 'database': SQLAlchemy 지원 저장소, 다중 워커 배포용
+                - 'none': 세션 추적 없음 (더미 레지스트리)
+            redis_url: Redis 연결 URL. backend='redis'일 때 필수.
+                형식: 'redis://[:password]@host:port/db'
+            database_url: 데이터베이스 연결 URL. backend='database'일 때 필수.
+                데이터베이스 타입에 따라 형식 결정 (예: 'postgresql://user:pass@host/db')
+            session_ttl: 세션 생존 시간 (초 단위). 이 시간 동안 비활성 상태인 세션은
+                자동으로 정리됩니다. 기본값: 3600 (1시간).
+            message_ttl: 메시지 생존 시간 (초 단위). 배달되지 않은 메시지는
+                이 시간 후 제거됩니다. 기본값: 600 (10분).
 
         Raises:
-            ValueError: If backend is invalid, required URL is missing, or required packages are not installed.
+            ValueError: 백엔드가 유효하지 않거나, 필수 URL이 누락되었거나,
+                필수 패키지가 설치되지 않은 경우.
 
-        Examples:
-            >>> # Memory backend (default)
+        사용 예시:
+            >>> # 메모리 백엔드 (기본값)
             >>> backend = SessionBackend()
             >>> backend._backend
             'memory'
 
-            >>> # Redis backend requires URL
+            >>> # Redis 백엔드는 URL이 필요함
             >>> try:
             ...     backend = SessionBackend(backend='redis')
             ... except ValueError as e:
             ...     'redis_url' in str(e)
             True
 
-            >>> # Invalid backend
+            >>> # 유효하지 않은 백엔드
             >>> try:
             ...     backend = SessionBackend(backend='invalid')
             ... except ValueError as e:
@@ -204,50 +202,49 @@ class SessionBackend:
 
 
 class SessionRegistry(SessionBackend):
-    """Registry for SSE sessions with optional distributed state.
+    """선택적 분산 상태를 지원하는 SSE 세션 레지스트리.
 
-    This class manages server-sent event (SSE) sessions, providing methods to add,
-    remove, and query sessions. It supports multiple backend types for different
-    deployment scenarios:
+    이 클래스는 서버 전송 이벤트(SSE) 세션을 관리하며, 세션 추가, 제거, 조회 메소드를 제공합니다.
+    다양한 배포 시나리오를 위한 여러 백엔드 타입을 지원합니다:
 
-    - **Single-process deployments**: Use 'memory' backend (default)
-    - **Multi-worker deployments**: Use 'redis' or 'database' backend
-    - **Testing/development**: Use 'none' backend to disable session tracking
+    - **단일 프로세스 배포**: 'memory' 백엔드 사용 (기본값)
+    - **다중 워커 배포**: 'redis' 또는 'database' 백엔드 사용
+    - **테스트/개발**: 'none' 백엔드로 세션 추적 비활성화
 
-    The registry maintains a local cache of transport objects while using the
-    shared backend to track session existence across workers. This enables
-    horizontal scaling while keeping transport objects process-local.
+    레지스트리는 전송 객체의 로컬 캐시를 유지하면서 워커 간 세션 존재를
+    추적하기 위해 공유 백엔드를 사용합니다. 이를 통해 전송 객체를 프로세스 로컬로 유지하면서
+    수평 확장을 가능하게 합니다.
 
-    Attributes:
-        _sessions: Local dictionary mapping session IDs to transport objects
-        _lock: Asyncio lock for thread-safe access to _sessions
-        _cleanup_task: Background task for cleaning up expired sessions
+    속성:
+        _sessions: 세션 ID를 전송 객체에 매핑하는 로컬 딕셔너리
+        _lock: _sessions에 대한 스레드 안전한 접근을 위한 asyncio 락
+        _cleanup_task: 만료된 세션 정리용 백그라운드 태스크
 
-    Examples:
+    사용 예시:
         >>> import asyncio
         >>> from mcpgateway.cache.session_registry import SessionRegistry
         >>>
         >>> class MockTransport:
         ...     async def disconnect(self):
-        ...         print("Disconnected")
+        ...         print("연결 해제됨")
         ...     async def is_connected(self):
         ...         return True
         ...     async def send_message(self, msg):
-        ...         print(f"Sent: {msg}")
+        ...         print(f"전송됨: {msg}")
         >>>
-        >>> # Create registry and add session
+        >>> # 레지스트리 생성 및 세션 추가
         >>> reg = SessionRegistry(backend='memory')
         >>> transport = MockTransport()
         >>> asyncio.run(reg.add_session('test123', transport))
         >>>
-        >>> # Retrieve session
+        >>> # 세션 조회
         >>> found = asyncio.run(reg.get_session('test123'))
         >>> found is transport
         True
         >>>
-        >>> # Remove session
+        >>> # 세션 제거
         >>> asyncio.run(reg.remove_session('test123'))
-        Disconnected
+        연결 해제됨
         >>> asyncio.run(reg.get_session('test123')) is None
         True
     """
@@ -260,24 +257,24 @@ class SessionRegistry(SessionBackend):
         session_ttl: int = 3600,  # 1 hour
         message_ttl: int = 600,  # 10 min
     ):
-        """Initialize session registry with specified backend.
+        """지정된 백엔드로 세션 레지스트리를 초기화.
 
         Args:
-            backend: Backend type. Must be one of 'memory', 'redis', 'database', or 'none'.
-            redis_url: Redis connection URL. Required when backend='redis'.
-            database_url: Database connection URL. Required when backend='database'.
-            session_ttl: Session time-to-live in seconds. Default: 3600.
-            message_ttl: Message time-to-live in seconds. Default: 600.
+            backend: 백엔드 타입. 'memory', 'redis', 'database', 'none' 중 하나여야 함.
+            redis_url: Redis 연결 URL. backend='redis'일 때 필수.
+            database_url: 데이터베이스 연결 URL. backend='database'일 때 필수.
+            session_ttl: 세션 생존 시간 (초 단위). 기본값: 3600.
+            message_ttl: 메시지 생존 시간 (초 단위). 기본값: 600.
 
-        Examples:
-            >>> # Default memory backend
+        사용 예시:
+            >>> # 기본 메모리 백엔드
             >>> reg = SessionRegistry()
             >>> reg._backend
             'memory'
             >>> isinstance(reg._sessions, dict)
             True
 
-            >>> # Redis backend with custom TTL
+            >>> # 사용자 정의 TTL을 가진 Redis 백엔드
             >>> try:
             ...     reg = SessionRegistry(
             ...         backend='redis',
@@ -285,70 +282,77 @@ class SessionRegistry(SessionBackend):
             ...         session_ttl=7200
             ...     )
             ... except ValueError:
-            ...     pass  # Redis may not be available
+            ...     pass  # Redis가 사용 불가능할 수 있음
         """
+        # 부모 클래스 초기화 (백엔드 설정)
         super().__init__(backend=backend, redis_url=redis_url, database_url=database_url, session_ttl=session_ttl, message_ttl=message_ttl)
-        self._sessions: Dict[str, Any] = {}  # Local transport cache
+
+        # 로컬 전송 객체 캐시: 세션 ID를 전송 객체에 매핑
+        self._sessions: Dict[str, Any] = {}
+
+        # 스레드 안전성을 위한 비동기 락
         self._lock = asyncio.Lock()
+
+        # 백그라운드 정리 태스크 참조
         self._cleanup_task = None
 
     async def initialize(self) -> None:
-        """Initialize the registry with async setup.
+        """비동기 설정으로 레지스트리를 초기화.
 
-        This method performs asynchronous initialization tasks that cannot be done
-        in __init__. It starts background cleanup tasks and sets up pubsub
-        subscriptions for distributed backends.
+        이 메소드는 __init__에서 수행할 수 없는 비동기 초기화 작업을 수행합니다.
+        백그라운드 정리 태스크를 시작하고 분산 백엔드의 pubsub 구독을 설정합니다.
 
-        Call this during application startup after creating the registry instance.
+        레지스트리 인스턴스 생성 후 애플리케이션 시작 시 호출하세요.
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> reg = SessionRegistry(backend='memory')
             >>> asyncio.run(reg.initialize())
             >>> reg._cleanup_task is not None
             True
             >>>
-            >>> # Cleanup
+            >>> # 정리
             >>> asyncio.run(reg.shutdown())
         """
-        logger.info(f"Initializing session registry with backend: {self._backend}")
+        logger.info(f"백엔드 {self._backend}로 세션 레지스트리 초기화 중")
 
         if self._backend == "database":
-            # Start database cleanup task
+            # 데이터베이스 정리 태스크 시작
             self._cleanup_task = asyncio.create_task(self._db_cleanup_task())
-            logger.info("Database cleanup task started")
+            logger.info("데이터베이스 정리 태스크 시작됨")
 
         elif self._backend == "redis":
+            # Redis pubsub 채널 구독으로 세션 이벤트 수신
             await self._pubsub.subscribe("mcp_session_events")
 
         elif self._backend == "none":
-            # Nothing to initialize for none backend
+            # none 백엔드는 초기화할 것이 없음
             pass
 
-        # Memory backend needs session cleanup
+        # 메모리 백엔드는 세션 정리 필요
         elif self._backend == "memory":
             self._cleanup_task = asyncio.create_task(self._memory_cleanup_task())
-            logger.info("Memory cleanup task started")
+            logger.info("메모리 정리 태스크 시작됨")
 
     async def shutdown(self) -> None:
-        """Shutdown the registry and clean up resources.
+        """레지스트리를 종료하고 리소스를 정리.
 
-        This method cancels background tasks and closes connections to external
-        services. Call this during application shutdown to ensure clean termination.
+        이 메소드는 백그라운드 태스크를 취소하고 외부 서비스 연결을 닫습니다.
+        깔끔한 종료를 위해 애플리케이션 종료 시 호출하세요.
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> reg = SessionRegistry()
             >>> asyncio.run(reg.initialize())
             >>> task_was_created = reg._cleanup_task is not None
             >>> asyncio.run(reg.shutdown())
-            >>> # After shutdown, cleanup task should be handled (cancelled or done)
+            >>> # 종료 후, 정리 태스크는 취소되거나 완료되어야 함
             >>> task_was_created and (reg._cleanup_task.cancelled() or reg._cleanup_task.done())
             True
         """
-        logger.info("Shutting down session registry")
+        logger.info("세션 레지스트리 종료 중")
 
-        # Cancel cleanup task
+        # 정리 태스크 취소
         if self._cleanup_task:
             self._cleanup_task.cancel()
             try:
@@ -356,38 +360,37 @@ class SessionRegistry(SessionBackend):
             except asyncio.CancelledError:
                 pass
 
-        # Close Redis connections
+        # Redis 연결 종료
         if self._backend == "redis":
             try:
                 await self._pubsub.aclose()
                 await self._redis.aclose()
             except Exception as e:
-                logger.error(f"Error closing Redis connection: {e}")
-                # Error example:
+                logger.error(f"Redis 연결 종료 오류: {e}")
+                # 오류 예시:
                 # >>> import logging
                 # >>> logger = logging.getLogger(__name__)
-                # >>> logger.error(f"Error closing Redis connection: Connection lost")  # doctest: +SKIP
+                # >>> logger.error(f"Redis 연결 종료 오류: 연결 끊어짐")  # doctest: +SKIP
 
     async def add_session(self, session_id: str, transport: SSETransport) -> None:
-        """Add a session to the registry.
+        """레지스트리에 세션을 추가.
 
-        Stores the session in both the local cache and the distributed backend
-        (if configured). For distributed backends, this notifies other workers
-        about the new session.
+        로컬 캐시와 분산 백엔드(설정된 경우)에 세션을 저장합니다.
+        분산 백엔드의 경우 다른 워커들에게 새 세션에 대해 알립니다.
 
         Args:
-            session_id: Unique session identifier. Should be a UUID or similar
-                unique string to avoid collisions.
-            transport: SSE transport object for this session. Must implement
-                the SSETransport interface.
+            session_id: 고유 세션 식별자. 충돌을 피하기 위해 UUID 또는 유사한
+                고유 문자열이어야 합니다.
+            transport: 이 세션의 SSE 전송 객체. SSETransport 인터페이스를
+                구현해야 합니다.
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> from mcpgateway.cache.session_registry import SessionRegistry
             >>>
             >>> class MockTransport:
             ...     async def disconnect(self):
-            ...         print(f"Transport disconnected")
+            ...         print(f"전송 연결 해제됨")
             ...     async def is_connected(self):
             ...         return True
             >>>
@@ -395,33 +398,34 @@ class SessionRegistry(SessionBackend):
             >>> transport = MockTransport()
             >>> asyncio.run(reg.add_session('test-456', transport))
             >>>
-            >>> # Found in local cache
+            >>> # 로컬 캐시에서 찾음
             >>> found = asyncio.run(reg.get_session('test-456'))
             >>> found is transport
             True
             >>>
-            >>> # Remove session
+            >>> # 세션 제거
             >>> asyncio.run(reg.remove_session('test-456'))
-            Transport disconnected
+            전송 연결 해제됨
         """
-        # Skip for none backend
+        # none 백엔드는 건너뜀
         if self._backend == "none":
             return
 
+        # 스레드 안전하게 로컬 세션 캐시에 저장
         async with self._lock:
             self._sessions[session_id] = transport
 
         if self._backend == "redis":
-            # Store session marker in Redis
+            # Redis에 세션 마커 저장
             try:
                 await self._redis.setex(f"mcp:session:{session_id}", self._session_ttl, "1")
-                # Publish event to notify other workers
+                # 다른 워커들에게 알리기 위해 이벤트 발행
                 await self._redis.publish("mcp_session_events", json.dumps({"type": "add", "session_id": session_id, "timestamp": time.time()}))
             except Exception as e:
-                logger.error(f"Redis error adding session {session_id}: {e}")
+                logger.error(f"Redis 세션 추가 오류 {session_id}: {e}")
 
         elif self._backend == "database":
-            # Store session in database
+            # 데이터베이스에 세션 저장
             try:
 
                 def _db_add() -> None:
@@ -462,20 +466,19 @@ class SessionRegistry(SessionBackend):
         logger.info(f"Added session: {session_id}")
 
     async def get_session(self, session_id: str) -> Any:
-        """Get session transport by ID.
+        """ID로 세션 전송 객체를 조회.
 
-        First checks the local cache for the transport object. If not found locally
-        but using a distributed backend, checks if the session exists on another
-        worker.
+        먼저 로컬 캐시에서 전송 객체를 확인합니다. 로컬에서 찾을 수 없지만
+        분산 백엔드를 사용하는 경우 다른 워커에 세션이 존재하는지 확인합니다.
 
         Args:
-            session_id: Session identifier to look up.
+            session_id: 조회할 세션 식별자.
 
         Returns:
-            SSETransport object if found locally, None if not found or exists
-            on another worker.
+            로컬에서 찾은 경우 SSETransport 객체, 찾을 수 없거나 다른 워커에
+            존재하는 경우 None.
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> from mcpgateway.cache.session_registry import SessionRegistry
             >>>
@@ -486,34 +489,34 @@ class SessionRegistry(SessionBackend):
             >>> transport = MockTransport()
             >>> asyncio.run(reg.add_session('test-456', transport))
             >>>
-            >>> # Found in local cache
+            >>> # 로컬 캐시에서 찾음
             >>> found = asyncio.run(reg.get_session('test-456'))
             >>> found is transport
             True
             >>>
-            >>> # Not found
+            >>> # 찾을 수 없음
             >>> asyncio.run(reg.get_session('nonexistent')) is None
             True
         """
-        # Skip for none backend
+        # none 백엔드는 건너뜀
         if self._backend == "none":
             return None
 
-        # First check local cache
+        # 먼저 로컬 캐시 확인
         async with self._lock:
             transport = self._sessions.get(session_id)
             if transport:
-                logger.info(f"Session {session_id} exists in local cache")
+                logger.info(f"세션 {session_id}이 로컬 캐시에 존재함")
                 return transport
 
-        # If not in local cache, check if it exists in shared backend
+        # 로컬 캐시에 없으면 공유 백엔드에서 존재 여부 확인
         if self._backend == "redis":
             try:
                 exists = await self._redis.exists(f"mcp:session:{session_id}")
                 session_exists = bool(exists)
                 if session_exists:
-                    logger.info(f"Session {session_id} exists in Redis but not in local cache")
-                return None  # We don't have the transport locally
+                    logger.info(f"세션 {session_id}이 Redis에 존재하지만 로컬 캐시에는 없음")
+                return None  # 로컬에 전송 객체가 없음
             except Exception as e:
                 logger.error(f"Redis error checking session {session_id}: {e}")
                 return None

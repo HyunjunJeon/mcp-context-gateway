@@ -5,24 +5,24 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-jwt_cli.py - generate, inspect, **and be imported** for token helpers.
-* **Run as a script** - friendly CLI (works with *no* flags).
-* **Import as a library** - drop-in async functions `create_jwt_token` & `get_jwt_token`
-  kept for backward-compatibility, now delegating to the shared core helper.
+JWT 토큰 생성 및 검증 유틸리티 모듈.
+* **스크립트로 실행** - 친화적인 CLI (플래그 없이 작동).
+* **라이브러리로 임포트** - 드롭인 비동기 함수 `create_jwt_token` & `get_jwt_token`
+  하위 호환성을 위해 유지되며, 공유 코어 헬퍼에 위임합니다.
 
-Quick usage
+빠른 사용법
 -----------
-CLI (default secret, default payload):
+CLI (기본 시크릿, 기본 페이로드):
     $ python3 jwt_cli.py
 
-Library:
+라이브러리:
     from mcpgateway.utils.create_jwt_token import create_jwt_token, get_jwt_token
 
-    # inside async context
+    # 비동기 컨텍스트 내에서
     jwt = await create_jwt_token({"username": "alice"})
 
-Doctest examples
-----------------
+Doctest 예시
+------------
 >>> from mcpgateway.utils import create_jwt_token as jwt_util
 >>> jwt_util.settings.jwt_secret_key = 'secret'
 >>> jwt_util.settings.jwt_algorithm = 'HS256'
@@ -39,19 +39,25 @@ True
 # Future
 from __future__ import annotations
 
-# Standard
-import argparse
-import asyncio
-import datetime as _dt
-import json
-import sys
-from typing import Any, Dict, List, Sequence
+# ===========================================
+# 표준 라이브러리 임포트
+# ===========================================
+import argparse      # 명령줄 인자 파싱
+import asyncio        # 비동기 작업 지원
+import datetime as _dt  # 날짜/시간 처리
+import json           # JSON 데이터 처리
+import sys            # 시스템 관련 기능
+from typing import Any, Dict, List, Sequence  # 타입 힌트
 
-# Third-Party
-import jwt  # PyJWT
+# ===========================================
+# 외부 라이브러리 임포트 (Third-Party)
+# ===========================================
+import jwt  # PyJWT - JSON Web Token 처리 라이브러리
 
-# First-Party
-from mcpgateway.config import settings
+# ===========================================
+# 내부 모듈 임포트 (First-Party)
+# ===========================================
+from mcpgateway.config import settings  # 애플리케이션 설정
 
 __all__: Sequence[str] = (
     "create_jwt_token",
@@ -80,17 +86,17 @@ def _create_jwt_token(
     algorithm: str = DEFAULT_ALGO,
 ) -> str:
     """
-    Return a signed JWT string (synchronous, timezone-aware).
+    서명된 JWT 토큰 문자열을 반환합니다 (동기식, 타임존 인식).
 
     Args:
-        data: Dictionary containing payload data to encode in the token.
-        expires_in_minutes: Token expiration time in minutes. Default is 7 days.
-            Set to 0 to disable expiration.
-        secret: Secret key used for signing the token.
-        algorithm: Signing algorithm to use.
+        data: 토큰에 인코딩할 페이로드 데이터를 포함하는 딕셔너리.
+        expires_in_minutes: 토큰 만료 시간 (분 단위). 기본값은 7일입니다.
+            0으로 설정하면 만료를 비활성화합니다.
+        secret: 토큰 서명에 사용할 시크릿 키.
+        algorithm: 사용할 서명 알고리즘.
 
     Returns:
-        The JWT token string.
+        JWT 토큰 문자열.
 
     Doctest:
     >>> from mcpgateway.utils import create_jwt_token as jwt_util
@@ -101,18 +107,28 @@ def _create_jwt_token(
     >>> jwt.decode(token, 'secret', algorithms=['HS256'])['sub'] == 'alice'
     True
     """
+    # ===========================================
+    # JWT 페이로드 구성 및 서명
+    # ===========================================
+
+    # 입력 데이터를 복사하여 수정하지 않도록 함
     payload = data.copy()
+
+    # 만료 시간 설정 (양수인 경우에만)
     if expires_in_minutes > 0:
+        # 현재 UTC 시간에 만료 시간(분)을 더하여 만료 시각 계산
         expire = _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(minutes=expires_in_minutes)
-        payload["exp"] = int(expire.timestamp())
+        payload["exp"] = int(expire.timestamp())  # Unix 타임스탬프로 변환하여 저장
     else:
-        # Warn about non-expiring token
+        # 만료 없는 토큰에 대한 보안 경고
         print(
             "⚠️  WARNING: Creating token without expiration. This is a security risk!\n"
             "   Consider using --exp with a value > 0 for production use.\n"
             "   Once JWT API (#425) is available, use it for automatic token renewal.",
             file=sys.stderr,
         )
+
+    # JWT 라이브러리를 사용하여 페이로드를 인코딩하고 서명하여 반환
     return jwt.encode(payload, secret, algorithm=algorithm)
 
 
@@ -129,17 +145,17 @@ async def create_jwt_token(
     algorithm: str = DEFAULT_ALGO,
 ) -> str:
     """
-    Async facade for historic code. Internally synchronous-almost instant.
+    기존 코드를 위한 비동기 파사드. 내부적으로 동기식으로 거의 즉시 실행됩니다.
 
     Args:
-        data: Dictionary containing payload data to encode in the token.
-        expires_in_minutes: Token expiration time in minutes. Default is 7 days.
-            Set to 0 to disable expiration.
-        secret: Secret key used for signing the token.
-        algorithm: Signing algorithm to use.
+        data: 토큰에 인코딩할 페이로드 데이터를 포함하는 딕셔너리.
+        expires_in_minutes: 토큰 만료 시간 (분 단위). 기본값은 7일입니다.
+            0으로 설정하면 만료를 비활성화합니다.
+        secret: 토큰 서명에 사용할 시크릿 키.
+        algorithm: 사용할 서명 알고리즘.
 
     Returns:
-        The JWT token string.
+        JWT 토큰 문자열.
 
     Doctest:
     >>> from mcpgateway.utils import create_jwt_token as jwt_util
@@ -155,10 +171,10 @@ async def create_jwt_token(
 
 
 async def get_jwt_token() -> str:
-    """Return a token for ``{"username": "admin"}``, mirroring old behaviour.
+    """기본 관리자 사용자명을 포함한 토큰을 반환합니다 (기존 동작 미러링).
 
     Returns:
-        The JWT token string with default admin username.
+        기본 관리자 사용자명을 포함한 JWT 토큰 문자열.
     """
     user_data = {"username": DEFAULT_USERNAME}
     return await create_jwt_token(user_data)
@@ -312,23 +328,23 @@ def _payload_from_cli(args) -> Dict[str, Any]:
 
 
 def main() -> None:  # pragma: no cover
-    """Entry point for JWT command line interface.
+    """JWT 명령줄 인터페이스의 진입점.
 
-    Provides two main modes of operation:
-    1. Token creation: Generates a new JWT with specified payload
-    2. Token decoding: Decodes and displays an existing JWT (without verification)
+    두 가지 주요 작동 모드를 제공합니다:
+    1. 토큰 생성: 지정된 페이로드로 새 JWT 생성
+    2. 토큰 디코딩: 기존 JWT를 디코딩하여 표시 (검증하지 않음)
 
-    In creation mode, supports:
-    - Simple username payload (-u/--username)
-    - Custom JSON or key=value payload (-d/--data)
-    - Configurable expiration, secret, and algorithm
-    - Optional pretty-printing of payload before encoding
+    생성 모드에서는 다음을 지원합니다:
+    - 간단한 사용자명 페이로드 (-u/--username)
+    - 사용자 정의 JSON 또는 key=value 페이로드 (-d/--data)
+    - 설정 가능한 만료, 시크릿, 알고리즘
+    - 선택적 인코딩 전 페이로드 예쁘게 출력
 
-    In decode mode, displays the decoded payload as formatted JSON.
+    디코딩 모드에서는 디코딩된 페이로드를 포맷된 JSON으로 표시합니다.
 
-    The function handles being run in different contexts:
-    - Direct script execution: Runs synchronously
-    - Within existing asyncio loop: Delegates to executor to avoid blocking
+    함수는 다양한 컨텍스트에서 실행되는 것을 처리합니다:
+    - 직접 스크립트 실행: 동기식으로 실행
+    - 기존 asyncio 루프 내: 차단 방지를 위해 executor에 위임
 
     Examples:
         Command line usage::
@@ -357,35 +373,42 @@ def main() -> None:  # pragma: no cover
             -
             eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
     """
+    # ===========================================
+    # CLI 인자 파싱 및 처리
+    # ===========================================
     args = _parse_args()
 
-    # Decode mode takes precedence
+    # 디코딩 모드가 우선권을 가짐
     if args.decode:
+        # 토큰 디코딩 및 JSON 형식으로 출력
         decoded = _decode_jwt_token(args.decode, algorithms=[args.algo])
         json.dump(decoded, sys.stdout, indent=2, default=str)
         sys.stdout.write("\n")
         return
 
+    # CLI 인자에서 페이로드 추출
     payload = _payload_from_cli(args)
 
+    # 예쁘게 출력 옵션이 활성화된 경우 페이로드 표시
     if args.pretty:
         print("Payload:")
         print(json.dumps(payload, indent=2, default=str))
         print("-")
 
+    # JWT 토큰 생성 및 출력
     token = _create_jwt_token(payload, args.exp, args.secret, args.algo)
     print(token)
 
 
 if __name__ == "__main__":
-    # Support being run via ``python3 -m mcpgateway.utils.create_jwt_token`` too
+    # ``python3 -m mcpgateway.utils.create_jwt_token``을 통한 실행도 지원
     try:
-        # Respect existing asyncio loop if present (e.g. inside uvicorn dev server)
+        # 기존 asyncio 루프가 있는 경우 존중 (예: uvicorn 개발 서버 내부)
         loop = asyncio.get_running_loop()
-        loop.run_until_complete(asyncio.sleep(0))  # no-op to ensure loop alive
+        loop.run_until_complete(asyncio.sleep(0))  # 루프가 살아있는지 확인하는 no-op
     except RuntimeError:
-        # No loop; we're just a simple CLI call - run main synchronously
+        # 루프 없음 - 간단한 CLI 호출이므로 동기식으로 main 실행
         main()
     else:
-        # We're inside an active asyncio program - delegate to executor to avoid blocking
+        # 활성 asyncio 프로그램 내부에 있음 - 차단 방지를 위해 executor에 위임
         loop.run_in_executor(None, main)

@@ -10,27 +10,28 @@ Authors: Mihai Criveti
 터널링할 수 있도록 WebSocket 및 SSE 엔드포인트를 제공합니다.
 """
 
-# Standard
-import asyncio
-from datetime import datetime
-import json
-from typing import Any, Dict, Optional
-import uuid
+# Standard - 표준 라이브러리
+import asyncio  # 비동기 작업 지원
+from datetime import datetime  # 시간 처리
+import json  # JSON 데이터 처리
+from typing import Any, Dict, Optional  # 타입 힌트
+import uuid  # 고유 식별자 생성
 
-# Third-Party
-from fastapi import APIRouter, Depends, HTTPException, Request, status, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+# Third-Party - 외부 라이브러리
+from fastapi import APIRouter, Depends, HTTPException, Request, status, WebSocket, WebSocketDisconnect  # FastAPI 컴포넌트
+from fastapi.responses import StreamingResponse  # 스트리밍 응답
+from sqlalchemy.orm import Session  # 데이터베이스 세션
 
-# First-Party
-from mcpgateway.db import get_db
-from mcpgateway.services.logging_service import LoggingService
-from mcpgateway.utils.verify_credentials import require_auth
+# First-Party - 내부 모듈
+from mcpgateway.db import get_db  # 데이터베이스 세션 의존성
+from mcpgateway.services.logging_service import LoggingService  # 로깅 서비스
+from mcpgateway.utils.verify_credentials import require_auth  # 인증 검증
 
-# Initialize logging
+# 로깅 서비스 초기화 - 역방향 프록시 관련 로그 기록
 logging_service = LoggingService()
 LOGGER = logging_service.get_logger("mcpgateway.routers.reverse_proxy")
 
+# 역방향 프록시 라우터 생성 - /reverse-proxy 경로의 모든 엔드포인트 처리
 router = APIRouter(prefix="/reverse-proxy", tags=["reverse-proxy"])
 
 
@@ -45,14 +46,17 @@ class ReverseProxySession:
             websocket: WebSocket 연결.
             user: 인증된 사용자 정보 (있는 경우).
         """
+        # 세션 기본 정보 설정
         self.session_id = session_id
         self.websocket = websocket
         self.user = user
-        self.server_info: Dict[str, Any] = {}
-        self.connected_at = datetime.utcnow()
-        self.last_activity = datetime.utcnow()
-        self.message_count = 0
-        self.bytes_transferred = 0
+
+        # 서버 정보 및 통계 초기화
+        self.server_info: Dict[str, Any] = {}  # 연결된 서버의 메타데이터
+        self.connected_at = datetime.utcnow()  # 세션 연결 시간
+        self.last_activity = datetime.utcnow()  # 마지막 활동 시간
+        self.message_count = 0  # 처리한 메시지 수
+        self.bytes_transferred = 0  # 전송된 총 바이트 수
 
     async def send_message(self, message: Dict[str, Any]) -> None:
         """클라이언트에게 메시지를 전송합니다.
@@ -60,8 +64,11 @@ class ReverseProxySession:
         Args:
             message: 전송할 메시지 딕셔너리.
         """
+        # 메시지를 JSON 문자열로 변환
         data = json.dumps(message)
+        # WebSocket을 통해 텍스트 메시지 전송
         await self.websocket.send_text(data)
+        # 전송 바이트 수 및 마지막 활동 시간 업데이트
         self.bytes_transferred += len(data)
         self.last_activity = datetime.utcnow()
 
@@ -71,10 +78,13 @@ class ReverseProxySession:
         Returns:
             파싱된 메시지 딕셔너리.
         """
+        # WebSocket으로부터 텍스트 메시지 수신
         data = await self.websocket.receive_text()
+        # 수신 바이트 수, 메시지 수, 마지막 활동 시간 업데이트
         self.bytes_transferred += len(data)
         self.message_count += 1
         self.last_activity = datetime.utcnow()
+        # JSON 문자열을 파싱하여 딕셔너리로 반환
         return json.loads(data)
 
 
@@ -82,9 +92,9 @@ class ReverseProxyManager:
     """모든 역방향 프록시 세션을 관리합니다."""
 
     def __init__(self):
-        """관리자를 초기화합니다."""
-        self.sessions: Dict[str, ReverseProxySession] = {}
-        self._lock = asyncio.Lock()
+        """역방향 프록시 세션 관리자를 초기화합니다."""
+        self.sessions: Dict[str, ReverseProxySession] = {}  # 세션 ID를 키로 하는 세션 저장소
+        self._lock = asyncio.Lock()  # 동시성 제어를 위한 비동기 락
 
     async def add_session(self, session: ReverseProxySession) -> None:
         """새로운 세션을 추가합니다.
@@ -92,7 +102,9 @@ class ReverseProxyManager:
         Args:
             session: 추가할 세션.
         """
+        # 동시성 제어를 위해 락을 획득
         async with self._lock:
+            # 세션을 저장소에 추가
             self.sessions[session.session_id] = session
             LOGGER.info(f"Added reverse proxy session: {session.session_id}")
 
@@ -102,7 +114,9 @@ class ReverseProxyManager:
         Args:
             session_id: 제거할 세션 ID.
         """
+        # 동시성 제어를 위해 락을 획득
         async with self._lock:
+            # 세션이 존재하는 경우에만 제거
             if session_id in self.sessions:
                 del self.sessions[session_id]
                 LOGGER.info(f"Removed reverse proxy session: {session_id}")
@@ -116,6 +130,7 @@ class ReverseProxyManager:
         Returns:
             찾은 경우 세션, 그렇지 않으면 None.
         """
+        # 세션 저장소에서 해당 ID의 세션을 조회 (존재하지 않으면 None 반환)
         return self.sessions.get(session_id)
 
     def list_sessions(self) -> list[Dict[str, Any]]:
@@ -133,21 +148,23 @@ class ReverseProxyManager:
             >>> isinstance(sessions, list)
             True
         """
+        # 모든 활성 세션에 대해 정보를 수집하여 목록으로 반환
         return [
             {
-                "session_id": session.session_id,
-                "server_info": session.server_info,
-                "connected_at": session.connected_at.isoformat(),
-                "last_activity": session.last_activity.isoformat(),
-                "message_count": session.message_count,
-                "bytes_transferred": session.bytes_transferred,
+                "session_id": session.session_id,  # 세션 고유 ID
+                "server_info": session.server_info,  # 연결된 서버 정보
+                "connected_at": session.connected_at.isoformat(),  # 연결 시각 (ISO 형식)
+                "last_activity": session.last_activity.isoformat(),  # 마지막 활동 시각
+                "message_count": session.message_count,  # 처리한 메시지 수
+                "bytes_transferred": session.bytes_transferred,  # 전송된 바이트 수
+                # 사용자 정보 (문자열 또는 JWT 클레임에서 추출)
                 "user": session.user if isinstance(session.user, str) else session.user.get("sub") if isinstance(session.user, dict) else None,
             }
-            for session in self.sessions.values()
+            for session in self.sessions.values()  # 모든 세션 순회
         ]
 
 
-# Global manager instance
+# 전역 세션 관리자 인스턴스 - 모든 WebSocket 연결에서 공유
 manager = ReverseProxyManager()
 
 

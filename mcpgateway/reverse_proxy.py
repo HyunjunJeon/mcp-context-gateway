@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/reverse_proxy.py
-Copyright 2025
+"""위치: ./mcpgateway/reverse_proxy.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-MCP Reverse Proxy - Bridge local MCP servers to remote gateways.
-This module implements a reverse proxy that connects local MCP servers
-(running via stdio) to remote gateways, enabling servers behind firewalls
-or NATs to be accessible without inbound network access.
+MCP 리버스 프록시 - 로컬 MCP 서버를 원격 게이트웨이에 연결.
+이 모듈은 로컬 MCP 서버(stdio를 통해 실행)를 원격 게이트웨이에 연결하는
+리버스 프록시를 구현합니다. 방화벽이나 NAT 뒤에 있는 서버들이 인바운드
+네트워크 접근 없이 접근 가능하도록 합니다.
 
-The reverse proxy establishes an outbound WebSocket or SSE connection to
-a remote gateway and registers the local server. All MCP protocol messages
-are then tunneled through this persistent connection.
+리버스 프록시는 원격 게이트웨이에 대한 아웃바운드 WebSocket 또는 SSE 연결을
+설정하고 로컬 서버를 등록합니다. 모든 MCP 프로토콜 메시지는 이 지속적인
+연결을 통해 터널링됩니다.
 
-Environment variables:
-- REVERSE_PROXY_GATEWAY: Remote gateway URL (required)
-- REVERSE_PROXY_TOKEN: Bearer token for authentication (optional)
-- REVERSE_PROXY_RECONNECT_DELAY: Initial reconnection delay in seconds (default 1)
-- REVERSE_PROXY_MAX_RETRIES: Maximum reconnection attempts (default 0 = infinite)
-- REVERSE_PROXY_LOG_LEVEL: Python log level (default INFO)
+환경 변수:
+- REVERSE_PROXY_GATEWAY: 원격 게이트웨이 URL (필수)
+- REVERSE_PROXY_TOKEN: 인증을 위한 Bearer 토큰 (선택사항)
+- REVERSE_PROXY_RECONNECT_DELAY: 초기 재연결 지연 시간 (초 단위, 기본값 1)
+- REVERSE_PROXY_MAX_RETRIES: 최대 재연결 시도 횟수 (기본값 0 = 무한)
+- REVERSE_PROXY_LOG_LEVEL: Python 로그 레벨 (기본값 INFO)
 
-Example:
+예제:
     $ export REVERSE_PROXY_GATEWAY=https://gateway.example.com
     $ export REVERSE_PROXY_TOKEN=$(python3 -m mcpgateway.utils.create_jwt_token --username admin --exp 10080 --secret key)
     $ python3 -m mcpgateway.reverse_proxy --local-stdio "uvx mcp-server-git"

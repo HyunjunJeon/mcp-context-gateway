@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/admin.py
-Copyright 2025
+"""위치: ./mcpgateway/admin.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Admin UI Routes for MCP Gateway.
-This module contains all the administrative UI endpoints for the MCP Gateway.
-It provides a comprehensive interface for managing servers, tools, resources,
-prompts, gateways, and roots through RESTful API endpoints. The module handles
-all aspects of CRUD operations for these entities, including creation,
-reading, updating, deletion, and status toggling.
+MCP 게이트웨이 관리 UI 라우트.
+이 모듈은 MCP 게이트웨이를 위한 모든 관리 UI 엔드포인트를 포함합니다.
+RESTful API 엔드포인트를 통해 서버, 도구, 리소스, 프롬프트, 게이트웨이 및 루트를
+관리하기 위한 포괄적인 인터페이스를 제공합니다. 이 모듈은 이러한 엔티티에 대한
+모든 CRUD 작업 측면을 처리하며, 생성, 읽기, 업데이트, 삭제 및 상태 토글을 포함합니다.
 
-All endpoints in this module require authentication, which is enforced via
-the require_auth or require_basic_auth dependency. The module integrates with
-various services to perform the actual business logic operations on the
-underlying data.
+이 모듈의 모든 엔드포인트는 인증이 필요하며, require_auth 또는 require_basic_auth
+의존성을 통해 강제됩니다. 이 모듈은 기본 데이터에 대한 실제 비즈니스 로직 작업을
+수행하기 위해 다양한 서비스와 통합됩니다.
 """
 
 # Standard
@@ -98,12 +96,12 @@ LOGGER = None
 
 
 def set_logging_service(service: LoggingService):
-    """Set the logging service instance to use.
+    """사용할 로깅 서비스 인스턴스를 설정합니다.
 
-    This should be called by main.py to share the same logging service.
+    동일한 로깅 서비스를 공유하기 위해 main.py에서 호출되어야 합니다.
 
     Args:
-        service: The LoggingService instance to use
+        service: 사용할 LoggingService 인스턴스
     """
     global logging_service, LOGGER  # pylint: disable=global-statement
     logging_service = service
@@ -134,62 +132,62 @@ rate_limit_storage = defaultdict(list)
 
 
 def rate_limit(requests_per_minute: int = None):
-    """Apply rate limiting to admin endpoints.
+    """관리 엔드포인트에 속도 제한을 적용합니다.
 
     Args:
-        requests_per_minute: Maximum requests per minute (uses config default if None)
+        requests_per_minute: 분당 최대 요청 수 (None인 경우 구성 기본값 사용)
 
     Returns:
-        Decorator function that enforces rate limiting
+        속도 제한을 강제하는 데코레이터 함수
     """
 
     def decorator(func):
-        """Decorator that wraps the function with rate limiting logic.
+        """속도 제한 로직으로 함수를 감싸는 데코레이터.
 
         Args:
-            func: The function to be wrapped with rate limiting
+            func: 속도 제한으로 감쌀 함수
 
         Returns:
-            The wrapped function with rate limiting applied
+            속도 제한이 적용된 감싸진 함수
         """
 
         @wraps(func)
         async def wrapper(*args, request: Request = None, **kwargs):
-            """Execute the wrapped function with rate limiting enforcement.
+            """속도 제한 강제와 함께 감싸진 함수를 실행합니다.
 
             Args:
-                *args: Positional arguments to pass to the wrapped function
-                request: FastAPI Request object for extracting client IP
-                **kwargs: Keyword arguments to pass to the wrapped function
+                *args: 감싸진 함수에 전달할 위치 인자
+                request: 클라이언트 IP 추출을 위한 FastAPI Request 객체
+                **kwargs: 감싸진 함수에 전달할 키워드 인자
 
             Returns:
-                The result of the wrapped function call
+                감싸진 함수 호출의 결과
 
             Raises:
-                HTTPException: When rate limit is exceeded (429 status)
+                HTTPException: 속도 제한 초과 시 (429 상태)
             """
-            # use configured limit if none provided
+            # 제공되지 않은 경우 구성된 제한 사용
             limit = requests_per_minute or settings.validation_max_requests_per_minute
 
-            # request can be None in some edge cases (e.g., tests)
+            # 일부 엣지 케이스에서 request가 None일 수 있음 (예: 테스트)
             client_ip = request.client.host if request and request.client else "unknown"
             current_time = time.time()
             minute_ago = current_time - 60
 
-            # prune old timestamps
+            # 오래된 타임스탬프 정리
             rate_limit_storage[client_ip] = [ts for ts in rate_limit_storage[client_ip] if ts > minute_ago]
 
-            # enforce
+            # 강제 적용
             if len(rate_limit_storage[client_ip]) >= limit:
-                LOGGER.warning(f"Rate limit exceeded for IP {client_ip} on endpoint {func.__name__}")
+                LOGGER.warning(f"IP {client_ip}의 엔드포인트 {func.__name__}에서 속도 제한 초과")
                 raise HTTPException(
                     status_code=429,
-                    detail=f"Rate limit exceeded. Maximum {limit} requests per minute.",
+                    detail=f"속도 제한 초과. 분당 최대 {limit}개의 요청.",
                 )
 
             rate_limit_storage[client_ip].append(current_time)
 
-            # IMPORTANT: forward request to the real endpoint
+            # 중요: 실제 엔드포인트로 요청 전달
             return await func(*args, request=request, **kwargs)
 
         return wrapper
@@ -297,26 +295,26 @@ async def admin_list_servers(
     user: str = Depends(require_auth),
 ) -> List[Dict[str, Any]]:
     """
-    List servers for the admin UI with an option to include inactive servers.
+    관리 UI를 위한 서버 목록을 반환하며, 비활성 서버를 포함할지 옵션을 제공합니다.
 
     Args:
-        include_inactive (bool): Whether to include inactive servers.
-        db (Session): The database session dependency.
-        user (str): The authenticated user dependency.
+        include_inactive (bool): 비활성 서버를 포함할지 여부.
+        db (Session): 데이터베이스 세션 의존성.
+        user (str): 인증된 사용자 의존성.
 
     Returns:
-        List[ServerRead]: A list of server records.
+        List[ServerRead]: 서버 레코드 목록.
 
     Examples:
         >>> import asyncio
         >>> from unittest.mock import AsyncMock, MagicMock
         >>> from mcpgateway.schemas import ServerRead, ServerMetrics
         >>>
-        >>> # Mock dependencies
+        >>> # 의존성 모킹
         >>> mock_db = MagicMock()
         >>> mock_user = "test_user"
         >>>
-        >>> # Mock server service
+        >>> # 서버 서비스 모킹
         >>> from datetime import datetime, timezone
         >>> mock_metrics = ServerMetrics(
         ...     total_executions=10,
@@ -342,11 +340,11 @@ async def admin_list_servers(
         ...     metrics=mock_metrics
         ... )
         >>>
-        >>> # Mock the server_service.list_servers method
+        >>> # server_service.list_servers 메소드 모킹
         >>> original_list_servers = server_service.list_servers
         >>> server_service.list_servers = AsyncMock(return_value=[mock_server])
         >>>
-        >>> # Test the function
+        >>> # 함수 테스트
         >>> async def test_admin_list_servers():
         ...     result = await admin_list_servers(
         ...         include_inactive=False,
@@ -355,14 +353,14 @@ async def admin_list_servers(
         ...     )
         ...     return len(result) > 0 and isinstance(result[0], dict)
         >>>
-        >>> # Run the test
+        >>> # 테스트 실행
         >>> asyncio.run(test_admin_list_servers())
         True
         >>>
-        >>> # Restore original method
+        >>> # 원본 메소드 복원
         >>> server_service.list_servers = original_list_servers
         >>>
-        >>> # Additional test for empty server list
+        >>> # 빈 서버 목록에 대한 추가 테스트
         >>> server_service.list_servers = AsyncMock(return_value=[])
         >>> async def test_admin_list_servers_empty():
         ...     result = await admin_list_servers(
@@ -375,7 +373,7 @@ async def admin_list_servers(
         True
         >>> server_service.list_servers = original_list_servers
         >>>
-        >>> # Additional test for exception handling
+        >>> # 예외 처리에 대한 추가 테스트
         >>> import pytest
         >>> from fastapi import HTTPException
         >>> async def test_admin_list_servers_exception():

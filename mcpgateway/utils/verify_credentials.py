@@ -4,10 +4,9 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Authentication verification utilities for MCP Gateway.
-This module provides JWT and Basic authentication verification functions
-for securing API endpoints. It supports authentication via Authorization
-headers and cookies.
+MCP Gateway용 인증 검증 유틸리티.
+이 모듈은 API 엔드포인트 보안을 위해 JWT 및 Basic 인증 검증 기능을 제공합니다.
+Authorization 헤더와 쿠키를 통한 인증을 지원합니다.
 Examples:
     >>> from mcpgateway.utils import verify_credentials as vc
     >>> class DummySettings:

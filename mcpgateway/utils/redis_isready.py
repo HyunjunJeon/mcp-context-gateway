@@ -5,9 +5,9 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Reeve Barreto, Mihai Criveti
 
-redis_isready - Wait until Redis is ready and accepting connections
-This helper blocks until the given **Redis** server (defined by a connection URL)
-successfully responds to a `PING` command. It is intended to delay application startup until Redis is online.
+redis_isready - Redis가 준비되고 연결을 받아들일 때까지 대기
+이 헬퍼는 주어진 Redis 서버(연결 URL로 정의됨)가 `PING` 명령에 성공적으로
+응답할 때까지 차단합니다. Redis가 온라인 상태가 될 때까지 애플리케이션 시작을 지연시키기 위한 것입니다.
 
 It can be used both **synchronously** or **asynchronously**, and will retry
 connections with a configurable interval and number of attempts.

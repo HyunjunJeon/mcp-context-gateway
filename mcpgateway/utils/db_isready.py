@@ -5,47 +5,46 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-db_isready - Wait until the configured database is ready
+db_isready - 구성된 데이터베이스가 준비될 때까지 대기
 ==========================================================
-This helper blocks until the given database (defined by an **SQLAlchemy** URL)
-successfully answers a trivial round-trip - ``SELECT 1`` - and then returns.
-It is useful as a container **readiness/health probe** or imported from Python
-code to delay start-up of services that depend on the DB.
+이 헬퍼는 주어진 데이터베이스(SQLAlchemy URL로 정의됨)가
+간단한 왕복 쿼리 ``SELECT 1``에 성공적으로 응답할 때까지 차단합니다.
+컨테이너 **준비도/헬스 프로브**로 유용하거나, DB에 의존하는 서비스의
+시작을 지연시키기 위해 Python 코드에서 임포트하여 사용할 수 있습니다.
 
-Exit codes when executed as a script
+스크립트로 실행 시 종료 코드
 -----------------------------------
-* ``0`` - database ready.
-* ``1`` - all attempts exhausted / timed-out.
-* ``2`` - :pypi:`SQLAlchemy` is **not** installed.
-* ``3`` - invalid parameter combination (``max_tries``/``interval``/``timeout``).
+* ``0`` - 데이터베이스 준비됨.
+* ``1`` - 모든 시도 소진 / 타임아웃.
+* ``2`` - :pypi:`SQLAlchemy`가 **설치되지 않음**.
+* ``3`` - 유효하지 않은 파라미터 조합 (``max_tries``/``interval``/``timeout``).
 
-Features
+기능
 --------
-* Accepts **any** SQLAlchemy URL supported by the installed version.
-* Timing knobs (tries, interval, connect-timeout) configurable through
-  *environment variables* **or** *CLI flags* - see below.
-* Works **synchronously** (blocking) or **asynchronously** - simply
-  ``await wait_for_db_ready()``.
-* Credentials appearing in log lines are automatically **redacted**.
-* Depends only on ``sqlalchemy`` (already required by *mcpgateway*).
+* 설치된 버전에서 지원하는 **모든** SQLAlchemy URL을 허용.
+* 타이밍 조정 (시도 횟수, 간격, 연결 타임아웃)은
+  *환경 변수* **또는** *CLI 플래그*를 통해 구성 가능 - 아래 참조.
+* **동기식** (차단) 또는 **비동기식**으로 작동 - 간단히
+  ``await wait_for_db_ready()``를 사용.
+* 로그 라인에 나타나는 자격 증명은 자동으로 **삭제됨**.
+* ``sqlalchemy``에만 의존 (이미 *mcpgateway*에 필요).
 
-Environment variables
+환경 변수
 ---------------------
-The script falls back to :pydata:`mcpgateway.config.settings`, but the values
-below can be overridden via environment variables *or* the corresponding
-command-line options.
+스크립트는 :pydata:`mcpgateway.config.settings`로 폴백하지만,
+아래 값들은 환경 변수 **또는** 해당 명령줄 옵션을 통해 재정의할 수 있습니다.
 
 +------------------------+----------------------------------------------+-----------+
-| Name                   | Description                                  | Default   |
+| 이름                   | 설명                                         | 기본값    |
 +========================+==============================================+===========+
 | ``DATABASE_URL``       | SQLAlchemy connection URL                    | ``sqlite:///./mcp.db`` |
-| ``DB_WAIT_MAX_TRIES``  | Maximum attempts before giving up            | ``30``    |
-| ``DB_WAIT_INTERVAL``   | Delay between attempts *(seconds)*           | ``2``     |
-| ``DB_CONNECT_TIMEOUT`` | Per-attempt connect timeout *(seconds)*      | ``2``     |
-| ``LOG_LEVEL``          | Log verbosity when not set via ``--log-level`` | ``INFO`` |
+| ``DB_WAIT_MAX_TRIES``  | 포기하기 전 최대 시도 횟수                   | ``30``    |
+| ``DB_WAIT_INTERVAL``   | 시도 간 지연 *(초)*                          | ``2``     |
+| ``DB_CONNECT_TIMEOUT`` | 시도당 연결 타임아웃 *(초)*                  | ``2``     |
+| ``LOG_LEVEL``          | ``--log-level``로 설정되지 않은 경우 로그 상세도 | ``INFO`` |
 +------------------------+----------------------------------------------+-----------+
 
-Usage examples
+사용 예시
 --------------
 Shell ::
 
@@ -56,14 +55,14 @@ Python ::
 
     from mcpgateway.utils.db_isready import wait_for_db_ready
 
-    # Synchronous/blocking
+    # 동기식/차단
     wait_for_db_ready(sync=True)
 
-    # Asynchronous
+    # 비동기식
     import asyncio
     asyncio.run(wait_for_db_ready())
 
-Doctest examples
+Doctest 예시
 ----------------
 >>> from mcpgateway.utils.db_isready import wait_for_db_ready
 >>> import logging
@@ -207,27 +206,26 @@ def wait_for_db_ready(
     sync: bool = False,
 ) -> None:
     """
-    Block until the database replies to ``SELECT 1``.
+    데이터베이스가 ``SELECT 1``에 응답할 때까지 차단합니다.
 
-    The helper can be awaited **asynchronously** *or* called in *blocking*
-    mode by passing ``sync=True``.
+    헬퍼는 **비동기식으로** await할 수 있거나, ``sync=True``를 전달하여
+    *차단 모드*로 호출할 수 있습니다.
 
     Args:
-        database_url: SQLAlchemy URL to probe. Falls back to ``$DATABASE_URL``
-            or the project default (usually an on-disk SQLite file).
-        max_tries: Total number of connection attempts before giving up.
-        interval: Delay *in seconds* between attempts.
-        timeout: Per-attempt connection timeout in seconds (passed to the DB
-            driver when supported).
-        logger: Optional custom :class:`logging.Logger`. If omitted, a default
-            one named ``"db_isready"`` is lazily configured.
-        sync: When *True*, run in the **current** thread instead of scheduling
-            the probe inside an executor. Setting this flag from inside a
-            running event-loop will block that loop!
+        database_url: 조사할 SQLAlchemy URL. ``$DATABASE_URL``로 폴백되거나
+            프로젝트 기본값(보통 디스크상의 SQLite 파일)을 사용합니다.
+        max_tries: 포기하기 전 총 연결 시도 횟수.
+        interval: 시도 간 지연 *초 단위*.
+        timeout: 시도당 연결 타임아웃 초(지원되는 경우 DB 드라이버에 전달됨).
+        logger: 선택적 사용자 정의 :class:`logging.Logger`. 생략하면 기본적으로
+            ``"db_isready"``라는 이름의 로거가 지연 구성됩니다.
+        sync: *True*일 때, executor 내에서 프로브를 스케줄링하는 대신
+            **현재** 스레드에서 실행합니다. 실행 중인 이벤트 루프 내에서
+            이 플래그를 설정하면 해당 루프가 차단됩니다!
 
     Raises:
-        RuntimeError: If *invalid* parameters are supplied or the database is
-            still unavailable after the configured number of attempts.
+        RuntimeError: *유효하지 않은* 파라미터가 제공되었거나 구성된 시도 횟수 후에도
+            데이터베이스를 사용할 수 없는 경우.
 
     Doctest:
     >>> from mcpgateway.utils.db_isready import wait_for_db_ready
@@ -254,72 +252,88 @@ def wait_for_db_ready(
     error
     """
 
+    # 로거 초기화 (제공되지 않은 경우 기본 로거 생성)
     log = logger or logging.getLogger("db_isready")
-    if not log.handlers:  # basicConfig **once** - respects *log.setLevel* later
+    # 기본 구성 한 번만 수행 - 이후 log.setLevel 존중
+    if not log.handlers:
         logging.basicConfig(
             level=getattr(logging, DEFAULT_LOG_LEVEL, logging.INFO),
             format="%(asctime)s [%(levelname)s] %(message)s",
             datefmt="%Y-%m-%dT%H:%M:%S",
         )
 
+    # 파라미터 유효성 검증
     if max_tries < 1 or interval <= 0 or timeout <= 0:
         raise RuntimeError("Invalid max_tries / interval / timeout values")
 
+    # 데이터베이스 URL 파싱 및 정보 추출
     url_obj: URL = make_url(database_url)
     backend: str = url_obj.get_backend_name()
     target: str = _format_target(url_obj)
 
+    # 조사 시작 로깅
     log.info(f"Probing {backend} at {target} (timeout={timeout}s, interval={interval}s, max_tries={max_tries})")
 
+    # 데이터베이스 연결 인자 설정
     connect_args: Dict[str, Any] = {}
+    # 대부분의 드라이버가 이 파라미터를 존중함 - 다른 드라이버에는 무해
     if backend.startswith(("postgresql", "mysql")):
-        # Most drivers honour this parameter - harmless for others.
         connect_args["connect_timeout"] = timeout
 
+    # 데이터베이스 엔진 생성 (백엔드별로 다르게 구성)
     if backend == "sqlite":
-        # SQLite doesn't support pool overflow/timeout parameters
+        # SQLite는 풀 오버플로/타임아웃 파라미터를 지원하지 않음
         engine: Engine = create_engine(
             database_url,
             connect_args=connect_args,
         )
     else:
-        # Other databases support full pooling configuration
+        # 다른 데이터베이스는 전체 풀링 구성 지원
         engine: Engine = create_engine(
             database_url,
-            pool_pre_ping=True,
-            pool_size=1,
-            max_overflow=0,
+            pool_pre_ping=True,  # 연결 유효성 사전 확인
+            pool_size=1,         # 최소 풀 크기
+            max_overflow=0,      # 오버플로 방지
             connect_args=connect_args,
         )
 
-    def _probe() -> None:  # noqa: D401 - internal helper
-        """Inner synchronous probe running in either the current or a thread.
+    def _probe() -> None:  # noqa: D401 - 내부 헬퍼 함수
+        """현재 스레드 또는 별도 스레드에서 실행되는 내부 동기식 프로브.
 
         Returns:
-            None - the function exits successfully once the DB answers.
+            None - DB가 응답하면 함수가 성공적으로 종료됨.
 
         Raises:
-            RuntimeError: Forwarded after exhausting ``max_tries`` attempts.
+            RuntimeError: ``max_tries`` 시도 소진 후 전달됨.
         """
 
+        # 시작 시간 기록 (성능 측정용)
         start = time.perf_counter()
+        # 최대 시도 횟수만큼 반복
         for attempt in range(1, max_tries + 1):
             try:
+                # 데이터베이스 연결 및 간단한 쿼리 실행
                 with engine.connect() as conn:
                     conn.execute(text("SELECT 1"))
+                # 경과 시간 계산 및 성공 로깅
                 elapsed = time.perf_counter() - start
                 log.info(f"Database ready after {elapsed:.2f}s (attempt {attempt})")
                 return
             except OperationalError as exc:
+                # 실패 시도 로깅 (자격 증명 삭제됨)
                 log.debug(f"Attempt {attempt}/{max_tries} failed ({_sanitize(str(exc))}) - retrying in {interval:.1f}s")
+            # 다음 시도 전 대기
             time.sleep(interval)
+        # 모든 시도 실패 시 예외 발생
         raise RuntimeError(f"Database not ready after {max_tries} attempts")
 
+    # 실행 모드에 따른 프로브 실행
     if sync:
+        # 동기 모드: 현재 스레드에서 직접 실행
         _probe()
     else:
+        # 비동기 모드: 이벤트 루프 차단 방지를 위해 기본 executor에 오프로드
         loop = asyncio.get_event_loop()
-        # Off-load to default executor to avoid blocking the event-loop.
         loop.run_until_complete(loop.run_in_executor(None, _probe))
 
 

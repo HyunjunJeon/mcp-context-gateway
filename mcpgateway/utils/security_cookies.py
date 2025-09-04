@@ -4,10 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Security Cookie Utilities for MCP Gateway.
+MCP Gateway용 보안 쿠키 유틸리티.
 
-This module provides utilities for setting secure authentication cookies with proper
-security attributes to prevent common cookie-based attacks.
+이 모듈은 일반적인 쿠키 기반 공격을 방지하기 위해 적절한 보안 속성으로
+안전한 인증 쿠키를 설정하는 유틸리티를 제공합니다.
 """
 
 # Third-Party

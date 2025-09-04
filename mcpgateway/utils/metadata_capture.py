@@ -4,23 +4,22 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Metadata capture utilities for comprehensive audit tracking.
-This module provides utilities for capturing comprehensive metadata during
-entity creation and modification operations. It extracts request context
-information such as authenticated user, IP address, user agent, and source
-type for audit trail purposes.
+포괄적인 감사 추적을 위한 메타데이터 캡처 유틸리티.
+이 모듈은 엔티티 생성 및 수정 작업 중에 포괄적인 메타데이터를 캡처하는 유틸리티를 제공합니다.
+인증된 사용자, IP 주소, 사용자 에이전트, 소스 유형 등의 요청 컨텍스트 정보를
+감사 추적 목적으로 추출합니다.
 
-Examples:
+예시:
     >>> from mcpgateway.utils.metadata_capture import MetadataCapture
     >>> from types import SimpleNamespace
-    >>> # Create mock request for testing
+    >>> # 테스트용 모의 요청 생성
     >>> request = SimpleNamespace()
     >>> request.client = SimpleNamespace()
     >>> request.client.host = "192.168.1.1"
     >>> request.headers = {"user-agent": "test/1.0"}
     >>> request.url = SimpleNamespace()
     >>> request.url.path = "/admin/tools"
-    >>> # Metadata capture during entity creation
+    >>> # 엔티티 생성 중 메타데이터 캡처
     >>> metadata = MetadataCapture.extract_creation_metadata(request, user="admin")
     >>> metadata["created_by"]
     'admin'
@@ -40,13 +39,13 @@ class MetadataCapture:
 
     @staticmethod
     def extract_request_context(request: Request) -> Dict[str, Optional[str]]:
-        """Extract basic request context information.
+        """기본 요청 컨텍스트 정보를 추출합니다.
 
         Args:
-            request: FastAPI request object
+            request: FastAPI 요청 객체
 
         Returns:
-            Dict containing IP address, user agent, and source type
+            IP 주소, 사용자 에이전트, 소스 유형을 포함하는 딕셔너리
 
         Examples:
             >>> # Mock request for testing

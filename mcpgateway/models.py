@@ -4,18 +4,18 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-MCP Protocol Type Definitions.
-This module defines all core MCP protocol types according to the specification.
-It includes:
-  - Message content types (text, image, resource)
-  - Tool definitions and schemas
-  - Resource types and templates
-  - Prompt structures
-  - Protocol initialization types
-  - Sampling message types
-  - Capability definitions
+MCP 프로토콜 타입 정의.
+이 모듈은 사양에 따라 모든 핵심 MCP 프로토콜 타입을 정의합니다.
+포함되는 내용:
+  - 메시지 콘텐츠 타입 (텍스트, 이미지, 리소스)
+  - 도구 정의 및 스키마
+  - 리소스 타입 및 템플릿
+  - 프롬프트 구조
+  - 프로토콜 초기화 타입
+  - 샘플링 메시지 타입
+  - 기능 정의
 
-Examples:
+사용 예시:
     >>> from mcpgateway.models import Role, LogLevel, TextContent
     >>> Role.USER.value
     'user'
@@ -42,11 +42,11 @@ from pydantic import AnyHttpUrl, AnyUrl, BaseModel, ConfigDict, Field
 
 
 class Role(str, Enum):
-    """Message role in conversations.
+    """대화에서 메시지의 역할.
 
     Attributes:
-        ASSISTANT (str): Indicates the assistant's role.
-        USER (str): Indicates the user's role.
+        ASSISTANT (str): 어시스턴트의 역할을 나타냅니다.
+        USER (str): 사용자의 역할을 나타냅니다.
 
     Examples:
         >>> Role.USER.value
@@ -64,17 +64,17 @@ class Role(str, Enum):
 
 
 class LogLevel(str, Enum):
-    """Standard syslog severity levels as defined in RFC 5424.
+    """RFC 5424에 정의된 표준 syslog 심각도 수준.
 
     Attributes:
-        DEBUG (str): Debug level.
-        INFO (str): Informational level.
-        NOTICE (str): Notice level.
-        WARNING (str): Warning level.
-        ERROR (str): Error level.
-        CRITICAL (str): Critical level.
-        ALERT (str): Alert level.
-        EMERGENCY (str): Emergency level.
+        DEBUG (str): 디버그 수준.
+        INFO (str): 정보 수준.
+        NOTICE (str): 알림 수준.
+        WARNING (str): 경고 수준.
+        ERROR (str): 오류 수준.
+        CRITICAL (str): 심각 수준.
+        ALERT (str): 경보 수준.
+        EMERGENCY (str): 긴급 수준.
     """
 
     DEBUG = "debug"
@@ -89,11 +89,11 @@ class LogLevel(str, Enum):
 
 # Base content types
 class TextContent(BaseModel):
-    """Text content for messages.
+    """메시지의 텍스트 콘텐츠.
 
     Attributes:
-        type (Literal["text"]): The fixed content type identifier for text.
-        text (str): The actual text message.
+        type (Literal["text"]): 텍스트의 고정 콘텐츠 타입 식별자.
+        text (str): 실제 텍스트 메시지.
 
     Examples:
         >>> content = TextContent(type='text', text='Hello World')
@@ -110,10 +110,10 @@ class TextContent(BaseModel):
 
 
 class JSONContent(BaseModel):
-    """JSON content for messages.
+    """메시지의 JSON 콘텐츠.
     Attributes:
-        type (Literal["text"]): The fixed content type identifier for text.
-        json (dict): The actual text message.
+        type (Literal["text"]): 텍스트의 고정 콘텐츠 타입 식별자.
+        json (dict): 실제 JSON 메시지.
     """
 
     type: Literal["text"]
@@ -121,12 +121,12 @@ class JSONContent(BaseModel):
 
 
 class ImageContent(BaseModel):
-    """Image content for messages.
+    """메시지의 이미지 콘텐츠.
 
     Attributes:
-        type (Literal["image"]): The fixed content type identifier for images.
-        data (bytes): The binary data of the image.
-        mime_type (str): The MIME type (e.g. "image/png") of the image.
+        type (Literal["image"]): 이미지의 고정 콘텐츠 타입 식별자.
+        data (bytes): 이미지의 바이너리 데이터.
+        mime_type (str): 이미지의 MIME 타입 (예: "image/png").
     """
 
     type: Literal["image"]
@@ -135,14 +135,14 @@ class ImageContent(BaseModel):
 
 
 class ResourceContent(BaseModel):
-    """Resource content that can be embedded.
+    """임베드될 수 있는 리소스 콘텐츠.
 
     Attributes:
-        type (Literal["resource"]): The fixed content type identifier for resources.
-        uri (str): The URI identifying the resource.
-        mime_type (Optional[str]): The MIME type of the resource, if known.
-        text (Optional[str]): A textual representation of the resource, if applicable.
-        blob (Optional[bytes]): Binary data of the resource, if applicable.
+        type (Literal["resource"]): 리소스의 고정 콘텐츠 타입 식별자.
+        uri (str): 리소스를 식별하는 URI.
+        mime_type (Optional[str]): 알려진 경우 리소스의 MIME 타입.
+        text (Optional[str]): 적용 가능한 경우 리소스의 텍스트 표현.
+        blob (Optional[bytes]): 적용 가능한 경우 리소스의 바이너리 데이터.
     """
 
     type: Literal["resource"]
@@ -403,21 +403,21 @@ class PromptResult(BaseModel):
 
 # Tool types
 class Tool(BaseModel):
-    """A tool that can be invoked.
+    """호출될 수 있는 도구.
 
     Attributes:
-        name (str): The unique name of the tool.
-        url (AnyHttpUrl): The URL of the tool.
-        description (Optional[str]): A description of the tool.
-        integrationType (str): The integration type of the tool (e.g. MCP or REST).
-        requestType (str): The HTTP method used to invoke the tool (GET, POST, PUT, DELETE, SSE, STDIO).
-        headers (Dict[str, Any]): A JSON object representing HTTP headers.
-        input_schema (Dict[str, Any]): A JSON Schema for validating the tool's input.
-        annotations (Optional[Dict[str, Any]]): Tool annotations for behavior hints.
-        auth_type (Optional[str]): The type of authentication used ("basic", "bearer", or None).
-        auth_username (Optional[str]): The username for basic authentication.
-        auth_password (Optional[str]): The password for basic authentication.
-        auth_token (Optional[str]): The token for bearer authentication.
+        name (str): 도구의 고유 이름.
+        url (AnyHttpUrl): 도구의 URL.
+        description (Optional[str]): 도구에 대한 설명.
+        integrationType (str): 도구의 통합 타입 (예: MCP 또는 REST).
+        requestType (str): 도구 호출에 사용되는 HTTP 메소드 (GET, POST, PUT, DELETE, SSE, STDIO).
+        headers (Dict[str, Any]): HTTP 헤더를 나타내는 JSON 객체.
+        input_schema (Dict[str, Any]): 도구의 입력을 검증하기 위한 JSON 스키마.
+        annotations (Optional[Dict[str, Any]]): 동작 힌트를 위한 도구 어노테이션.
+        auth_type (Optional[str]): 사용되는 인증 타입 ("basic", "bearer", 또는 None).
+        auth_username (Optional[str]): 기본 인증을 위한 사용자 이름.
+        auth_password (Optional[str]): 기본 인증을 위한 비밀번호.
+        auth_token (Optional[str]): Bearer 인증을 위한 토큰.
     """
 
     name: str
@@ -427,7 +427,7 @@ class Tool(BaseModel):
     request_type: str = "SSE"
     headers: Dict[str, Any] = Field(default_factory=dict)
     input_schema: Dict[str, Any] = Field(default_factory=lambda: {"type": "object", "properties": {}})
-    annotations: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Tool annotations for behavior hints")
+    annotations: Optional[Dict[str, Any]] = Field(default_factory=dict, description="동작 힌트를 위한 도구 어노테이션")
     auth_type: Optional[str] = None
     auth_username: Optional[str] = None
     auth_password: Optional[str] = None
@@ -435,11 +435,11 @@ class Tool(BaseModel):
 
 
 class ToolResult(BaseModel):
-    """Result of a tool invocation.
+    """도구 호출의 결과.
 
     Attributes:
-        content (List[ContentType]): A list of content items returned by the tool.
-        is_error (bool): Flag indicating if the tool call resulted in an error.
+        content (List[ContentType]): 도구가 반환한 콘텐츠 항목들의 목록.
+        is_error (bool): 도구 호출이 오류를 초래했는지 나타내는 플래그.
     """
 
     content: List[ContentType]
@@ -448,14 +448,14 @@ class ToolResult(BaseModel):
 
 # Resource types
 class Resource(BaseModel):
-    """A resource available from the server.
+    """서버에서 사용할 수 있는 리소스.
 
     Attributes:
-        uri (str): The unique URI of the resource.
-        name (str): The human-readable name of the resource.
-        description (Optional[str]): A description of the resource.
-        mime_type (Optional[str]): The MIME type of the resource.
-        size (Optional[int]): The size of the resource.
+        uri (str): 리소스의 고유 URI.
+        name (str): 사람이 읽을 수 있는 리소스 이름.
+        description (Optional[str]): 리소스에 대한 설명.
+        mime_type (Optional[str]): 리소스의 MIME 타입.
+        size (Optional[int]): 리소스의 크기.
     """
 
     uri: str
@@ -466,13 +466,13 @@ class Resource(BaseModel):
 
 
 class ResourceTemplate(BaseModel):
-    """A template for constructing resource URIs.
+    """리소스 URI를 구성하기 위한 템플릿.
 
     Attributes:
-        uri_template (str): The URI template string.
-        name (str): The unique name of the template.
-        description (Optional[str]): A description of the template.
-        mime_type (Optional[str]): The MIME type associated with the template.
+        uri_template (str): URI 템플릿 문자열.
+        name (str): 템플릿의 고유 이름.
+        description (Optional[str]): 템플릿에 대한 설명.
+        mime_type (Optional[str]): 템플릿과 연관된 MIME 타입.
     """
 
     uri_template: str
@@ -482,19 +482,19 @@ class ResourceTemplate(BaseModel):
 
 
 class ListResourceTemplatesResult(BaseModel):
-    """The server's response to a resources/templates/list request from the client.
+    """클라이언트의 resources/templates/list 요청에 대한 서버의 응답.
 
     Attributes:
-        meta (Optional[Dict[str, Any]]): Reserved property for metadata.
-        next_cursor (Optional[str]): Pagination cursor for the next page of results.
-        resource_templates (List[ResourceTemplate]): List of resource templates.
+        meta (Optional[Dict[str, Any]]): 메타데이터를 위한 예약된 속성.
+        next_cursor (Optional[str]): 다음 결과 페이지의 페이지네이션 커서.
+        resource_templates (List[ResourceTemplate]): 리소스 템플릿 목록.
     """
 
     meta: Optional[Dict[str, Any]] = Field(
-        None, alias="_meta", description="This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses."
+        None, alias="_meta", description="이 결과 속성은 프로토콜에 의해 예약되어 클라이언트와 서버가 응답에 추가 메타데이터를 첨부할 수 있도록 합니다."
     )
-    next_cursor: Optional[str] = Field(None, description="An opaque token representing the pagination position after the last returned result.\nIf present, there may be more results available.")
-    resource_templates: List[ResourceTemplate] = Field(default_factory=list, description="List of resource templates available on the server")
+    next_cursor: Optional[str] = Field(None, description="마지막으로 반환된 결과 이후의 페이지네이션 위치를 나타내는 불투명 토큰.\n존재하는 경우 더 많은 결과를 사용할 수 있습니다.")
+    resource_templates: List[ResourceTemplate] = Field(default_factory=list, description="서버에서 사용할 수 있는 리소스 템플릿 목록")
 
     model_config = ConfigDict(
         populate_by_name=True,

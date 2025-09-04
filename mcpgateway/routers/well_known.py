@@ -10,32 +10,33 @@ Well-Known URI 핸들러 라우터.
 기본값은 크롤링이 비활성화된 비공개 API 배포를 가정합니다.
 """
 
-# Standard
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+# Standard - 표준 라이브러리
+from datetime import datetime, timedelta, timezone  # 시간 및 날짜 처리
+from typing import Optional  # 옵셔널 타입 힌트
 
-# Third-Party
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import PlainTextResponse
+# Third-Party - 외부 라이브러리
+from fastapi import APIRouter, Depends, HTTPException, Request, Response  # FastAPI 컴포넌트
+from fastapi.responses import PlainTextResponse  # 일반 텍스트 응답
 
-# First-Party
-from mcpgateway.config import settings
-from mcpgateway.services.logging_service import LoggingService
-from mcpgateway.utils.verify_credentials import require_auth
+# First-Party - 내부 모듈
+from mcpgateway.config import settings  # 애플리케이션 설정
+from mcpgateway.services.logging_service import LoggingService  # 로깅 서비스
+from mcpgateway.utils.verify_credentials import require_auth  # 인증 검증
 
-# Get logger instance
+# 로거 인스턴스 획득
 logging_service = LoggingService()
 logger = logging_service.get_logger(__name__)
 
+# Well-Known 라우터 생성 - /.well-known 경로의 표준 파일 제공
 router = APIRouter(tags=["well-known"])
 
-# Well-known URI registry with validation
+# Well-Known URI 레지스트리 - 지원되는 표준 파일들의 메타데이터
 WELL_KNOWN_REGISTRY = {
-    "robots.txt": {"content_type": "text/plain", "description": "Robot exclusion standard", "rfc": "RFC 9309"},
-    "security.txt": {"content_type": "text/plain", "description": "Security contact information", "rfc": "RFC 9116"},
-    "ai.txt": {"content_type": "text/plain", "description": "AI usage policies", "rfc": "Draft"},
-    "dnt-policy.txt": {"content_type": "text/plain", "description": "Do Not Track policy", "rfc": "W3C"},
-    "change-password": {"content_type": "text/plain", "description": "Change password URL", "rfc": "RFC 8615"},
+    "robots.txt": {"content_type": "text/plain", "description": "Robot exclusion standard", "rfc": "RFC 9309"},  # 크롤러 접근 제어
+    "security.txt": {"content_type": "text/plain", "description": "Security contact information", "rfc": "RFC 9116"},  # 보안 연락처 정보
+    "ai.txt": {"content_type": "text/plain", "description": "AI usage policies", "rfc": "Draft"},  # AI 사용 정책
+    "dnt-policy.txt": {"content_type": "text/plain", "description": "Do Not Track policy", "rfc": "W3C"},  # 추적 거부 정책
+    "change-password": {"content_type": "text/plain", "description": "Change password URL", "rfc": "RFC 8615"},  # 비밀번호 변경 URL
 }
 
 
@@ -48,30 +49,34 @@ def validate_security_txt(content: str) -> Optional[str]:
     Returns:
         헤더가 추가된 검증된 security.txt 내용, 또는 내용이 비어있는 경우 None.
     """
+    # 내용이 비어있으면 None 반환
     if not content:
         return None
 
+    # 줄 단위로 분리하여 처리
     lines = content.strip().split("\n")
 
-    # Expires 필드가 있는지 확인
+    # Expires 필드가 있는지 확인 (보안 표준 준수를 위해 필수)
     has_expires = any(line.strip().startswith("Expires:") for line in lines)
 
-    # Expires 필드가 없으면 추가 (현재로부터 6개월 후)
+    # Expires 필드가 없으면 추가 (현재로부터 6개월 후로 설정)
     if not has_expires:
         expires = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=180)
         lines.append(f"Expires: {expires.isoformat()}Z")
 
-    # 필수 헤더로 시작하는지 확인
+    # 검증된 내용을 저장할 리스트 초기화
     validated = []
 
-    # 헤더 주석이 없으면 추가
+    # 헤더 주석이 없으면 추가 (생성 정보 포함)
     if not lines[0].startswith("#"):
         validated.append("# Security contact information for MCP Gateway")
         validated.append(f"# Generated: {datetime.now(timezone.utc).replace(microsecond=0).isoformat()}Z")
-        validated.append("")
+        validated.append("")  # 빈 줄 추가
 
+    # 기존 내용 추가
     validated.extend(lines)
 
+    # 줄 단위로 결합하여 반환
     return "\n".join(validated)
 
 

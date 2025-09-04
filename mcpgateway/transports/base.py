@@ -4,8 +4,8 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Base Transport Interface.
-This module defines the base protocol for MCP transports.
+기본 전송 인터페이스.
+MCP 전송을 위한 기본 프로토콜을 정의합니다.
 """
 
 # Standard
@@ -14,26 +14,25 @@ from typing import Any, AsyncGenerator, Dict
 
 
 class Transport(ABC):
-    """Base class for MCP transport implementations.
+    """MCP 전송 구현을 위한 기본 클래스.
 
-    This abstract base class defines the interface that all MCP transport
-    implementations must follow. It provides the core methods for connection
-    management and message exchange.
+    이 추상 기본 클래스는 모든 MCP 전송 구현이 따라야 하는 인터페이스를 정의합니다.
+    연결 관리와 메시지 교환을 위한 핵심 메소드를 제공합니다.
 
-    Examples:
-        >>> # Transport is abstract and cannot be instantiated directly
+    예시:
+        >>> # Transport는 추상 클래스이므로 직접 인스턴스화할 수 없음
         >>> try:
         ...     Transport()
         ... except TypeError as e:
-        ...     print("Cannot instantiate abstract class")
-        Cannot instantiate abstract class
+        ...     print("추상 클래스는 인스턴스화할 수 없음")
+        추상 클래스는 인스턴스화할 수 없음
 
-        >>> # Check if Transport is an abstract base class
+        >>> # Transport가 추상 기본 클래스인지 확인
         >>> from abc import ABC
         >>> issubclass(Transport, ABC)
         True
 
-        >>> # Verify abstract methods are defined
+        >>> # 추상 메소드가 정의되어 있는지 확인
         >>> hasattr(Transport, 'connect')
         True
         >>> hasattr(Transport, 'disconnect')
@@ -48,13 +47,13 @@ class Transport(ABC):
 
     @abstractmethod
     async def connect(self) -> None:
-        """Initialize transport connection.
+        """전송 연결을 초기화합니다.
 
-        This method should establish the underlying connection for the transport.
-        It must be called before sending or receiving messages.
+        이 메소드는 전송을 위한 기본 연결을 설정해야 합니다.
+        메시지를 보내거나 받기 전에 반드시 호출되어야 합니다.
 
-        Examples:
-            >>> # This is an abstract method - implementation required in subclasses
+        예시:
+            >>> # 이는 추상 메소드입니다 - 서브클래스에서 구현이 필요함
             >>> import inspect
             >>> inspect.ismethod(Transport.connect)
             False
@@ -64,13 +63,13 @@ class Transport(ABC):
 
     @abstractmethod
     async def disconnect(self) -> None:
-        """Close transport connection.
+        """전송 연결을 종료합니다.
 
-        This method should clean up the underlying connection and any associated
-        resources. It should be called when the transport is no longer needed.
+        이 메소드는 기본 연결과 관련된 모든 리소스를 정리해야 합니다.
+        전송이 더 이상 필요하지 않을 때 호출되어야 합니다.
 
-        Examples:
-            >>> # This is an abstract method - implementation required in subclasses
+        예시:
+            >>> # 이는 추상 메소드입니다 - 서브클래스에서 구현이 필요함
             >>> import inspect
             >>> inspect.ismethod(Transport.disconnect)
             False
@@ -80,13 +79,13 @@ class Transport(ABC):
 
     @abstractmethod
     async def send_message(self, message: Dict[str, Any]) -> None:
-        """Send a message over the transport.
+        """전송을 통해 메시지를 보냅니다.
 
         Args:
-            message: Message to send
+            message: 보낼 메시지
 
-        Examples:
-            >>> # This is an abstract method - implementation required in subclasses
+        예시:
+            >>> # 이는 추상 메소드입니다 - 서브클래스에서 구현이 필요함
             >>> import inspect
             >>> inspect.ismethod(Transport.send_message)
             False
@@ -96,13 +95,13 @@ class Transport(ABC):
 
     @abstractmethod
     async def receive_message(self) -> AsyncGenerator[Dict[str, Any], None]:
-        """Receive messages from the transport.
+        """전송에서 메시지를 수신합니다.
 
         Yields:
-            Received messages
+            수신된 메시지들
 
-        Examples:
-            >>> # This is an abstract method - implementation required in subclasses
+        예시:
+            >>> # 이는 추상 메소드입니다 - 서브클래스에서 구현이 필요함
             >>> import inspect
             >>> inspect.ismethod(Transport.receive_message)
             False
@@ -112,13 +111,13 @@ class Transport(ABC):
 
     @abstractmethod
     async def is_connected(self) -> bool:
-        """Check if transport is connected.
+        """전송이 연결되어 있는지 확인합니다.
 
         Returns:
-            True if connected
+            연결되어 있다면 True
 
-        Examples:
-            >>> # This is an abstract method - implementation required in subclasses
+        예시:
+            >>> # 이는 추상 메소드입니다 - 서브클래스에서 구현이 필요함
             >>> import inspect
             >>> inspect.ismethod(Transport.is_connected)
             False

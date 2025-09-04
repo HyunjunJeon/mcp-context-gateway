@@ -4,10 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Display Name Utilities.
-This module provides utilities for converting technical tool names to user-friendly display names.
+표시 이름 유틸리티.
+이 모듈은 기술적인 도구 이름을 사용자 친화적인 표시 이름으로 변환하는 유틸리티를 제공합니다.
 
-Examples:
+예시:
     >>> from mcpgateway.utils.display_name import generate_display_name
     >>> generate_display_name("duckduckgo_search")
     'Duckduckgo Search'
@@ -22,15 +22,15 @@ import re
 
 
 def generate_display_name(technical_name: str) -> str:
-    """Convert technical tool name to human-readable display name.
+    """기술적인 도구 이름을 사람이 읽기 쉬운 표시 이름으로 변환합니다.
 
-    Converts underscores, hyphens, and dots to spaces, then capitalizes the first letter.
+    언더스코어, 하이픈, 점을 공백으로 변환한 후 첫 글자를 대문자로 만듭니다.
 
     Args:
-        technical_name: The technical tool name (e.g., "duckduckgo_search")
+        technical_name: 기술적인 도구 이름 (예: "duckduckgo_search")
 
     Returns:
-        str: Human-readable display name (e.g., "Duckduckgo Search")
+        str: 사람이 읽기 쉬운 표시 이름 (예: "Duckduckgo Search")
 
     Examples:
         >>> generate_display_name("duckduckgo_search")
@@ -57,14 +57,14 @@ def generate_display_name(technical_name: str) -> str:
     if not technical_name:
         return ""
 
-    # Replace underscores, hyphens, and dots with spaces
+    # 언더스코어, 하이픈, 점을 공백으로 변환
     display_name = re.sub(r"[_\-\.]+", " ", technical_name)
 
-    # Remove extra whitespace and capitalize first letter
-    display_name = " ".join(display_name.split())  # Normalize whitespace
+    # 추가 공백 제거 및 첫 글자 대문자로 변환
+    display_name = " ".join(display_name.split())  # 공백 정규화
 
     if display_name:
-        # Capitalize each word (title case)
+        # 각 단어의 첫 글자를 대문자로 (타이틀 케이스)
         display_name = display_name.title()
 
     return display_name

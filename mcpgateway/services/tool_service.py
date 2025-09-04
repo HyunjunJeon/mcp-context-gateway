@@ -146,18 +146,18 @@ class ToolInvocationError(ToolError):
 
 
 class ToolService:
-    """Service for managing and invoking tools.
+    """도구 관리 및 호출을 위한 서비스.
 
-    Handles:
-    - Tool registration and deregistration.
-    - Tool invocation and validation.
-    - Tool federation.
-    - Event notifications.
-    - Active/inactive tool management.
+    처리하는 항목들:
+    - 도구 등록 및 등록 해제.
+    - 도구 호출 및 검증.
+    - 도구 페데레이션.
+    - 이벤트 알림.
+    - 활성/비활성 도구 관리.
     """
 
     def __init__(self) -> None:
-        """Initialize the tool service.
+        """도구 서비스를 초기화합니다.
 
         Examples:
             >>> from mcpgateway.services.tool_service import ToolService
@@ -169,56 +169,63 @@ class ToolService:
             >>> hasattr(service, '_http_client')
             True
         """
+        # 이벤트 구독자를 위한 큐 목록 초기화
         self._event_subscribers: List[asyncio.Queue] = []
+
+        # 탄력적인 HTTP 클라이언트 초기화 - 페데레이션 타임아웃 및 SSL 검증 설정
         self._http_client = ResilientHttpClient(client_args={"timeout": settings.federation_timeout, "verify": not settings.skip_ssl_verify})
+
+        # 플러그인 관리자 초기화 (활성화된 경우에만)
         self._plugin_manager: PluginManager | None = PluginManager() if settings.plugins_enabled else None
+
+        # OAuth 관리자 초기화
         self.oauth_manager = OAuthManager(
             request_timeout=int(settings.oauth_request_timeout if hasattr(settings, "oauth_request_timeout") else 30),
             max_retries=int(settings.oauth_max_retries if hasattr(settings, "oauth_max_retries") else 3),
         )
 
     async def initialize(self) -> None:
-        """Initialize the service.
+        """서비스를 초기화합니다.
 
         Examples:
             >>> from mcpgateway.services.tool_service import ToolService
             >>> service = ToolService()
             >>> import asyncio
-            >>> asyncio.run(service.initialize())  # Should log "Initializing tool service"
+            >>> asyncio.run(service.initialize())  # "Initializing tool service" 로그가 출력되어야 함
         """
-        logger.info("Initializing tool service")
+        logger.info("도구 서비스 초기화 중")
 
     async def shutdown(self) -> None:
-        """Shutdown the service.
+        """서비스를 종료합니다.
 
         Examples:
             >>> from mcpgateway.services.tool_service import ToolService
             >>> service = ToolService()
             >>> import asyncio
-            >>> asyncio.run(service.shutdown())  # Should log "Tool service shutdown complete"
+            >>> asyncio.run(service.shutdown())  # "Tool service shutdown complete" 로그가 출력되어야 함
         """
+        # HTTP 클라이언트 연결 종료
         await self._http_client.aclose()
         logger.info("Tool service shutdown complete")
 
     async def get_top_tools(self, db: Session, limit: int = 5) -> List[TopPerformer]:
-        """Retrieve the top-performing tools based on execution count.
+        """실행 횟수를 기준으로 최고 성능의 도구들을 검색합니다.
 
-        Queries the database to get tools with their metrics, ordered by the number of executions
-        in descending order. Returns a list of TopPerformer objects containing tool details and
-        performance metrics.
+        데이터베이스를 쿼리하여 실행 횟수 기준 내림차순으로 정렬된 도구와 메트릭을 가져옵니다.
+        도구 세부 정보와 성능 메트릭을 포함한 TopPerformer 객체 목록을 반환합니다.
 
         Args:
-            db (Session): Database session for querying tool metrics.
-            limit (int): Maximum number of tools to return. Defaults to 5.
+            db (Session): 도구 메트릭 쿼리를 위한 데이터베이스 세션.
+            limit (int): 반환할 최대 도구 수. 기본값은 5.
 
         Returns:
-            List[TopPerformer]: A list of TopPerformer objects, each containing:
-                - id: Tool ID.
-                - name: Tool name.
-                - execution_count: Total number of executions.
-                - avg_response_time: Average response time in seconds, or None if no metrics.
-                - success_rate: Success rate percentage, or None if no metrics.
-                - last_execution: Timestamp of the last execution, or None if no metrics.
+            List[TopPerformer]: 각 객체가 다음을 포함하는 TopPerformer 객체 목록:
+                - id: 도구 ID.
+                - name: 도구 이름.
+                - execution_count: 총 실행 횟수.
+                - avg_response_time: 초 단위 평균 응답 시간 (메트릭이 없는 경우 None).
+                - success_rate: 성공률 백분율 (메트릭이 없는 경우 None).
+                - last_execution: 마지막 실행 타임스탬프 (메트릭이 없는 경우 None).
         """
         results = (
             db.query(

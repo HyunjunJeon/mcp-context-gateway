@@ -4,44 +4,44 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti, Manav Gupta
 
-MCP Gateway Configuration.
-This module defines configuration settings for the MCP Gateway using Pydantic.
-It loads configuration from environment variables with sensible defaults.
+MCP 게이트웨이 구성 설정.
+이 모듈은 Pydantic을 사용하여 MCP 게이트웨이의 구성 설정을 정의합니다.
+환경 변수에서 구성 값을 로드하며 합리적인 기본값을 제공합니다.
 
-Environment variables:
-- APP_NAME: Gateway name (default: "MCP_Gateway")
-- HOST: Host to bind to (default: "127.0.0.1")
-- PORT: Port to listen on (default: 4444)
-- DATABASE_URL: SQLite database URL (default: "sqlite:///./mcp.db")
-- BASIC_AUTH_USER: Admin username (default: "admin")
-- BASIC_AUTH_PASSWORD: Admin password (default: "changeme")
-- LOG_LEVEL: Logging level (default: "INFO")
-- SKIP_SSL_VERIFY: Disable SSL verification (default: False)
-- AUTH_REQUIRED: Require authentication (default: True)
-- TRANSPORT_TYPE: Transport mechanisms (default: "all")
-- FEDERATION_ENABLED: Enable gateway federation (default: True)
-- DOCS_ALLOW_BASIC_AUTH: Allow basic auth for docs (default: False)
-- FEDERATION_DISCOVERY: Enable auto-discovery (default: False)
-- FEDERATION_PEERS: List of peer gateway URLs (default: [])
-- RESOURCE_CACHE_SIZE: Max cached resources (default: 1000)
-- RESOURCE_CACHE_TTL: Cache TTL in seconds (default: 3600)
-- TOOL_TIMEOUT: Tool invocation timeout (default: 60)
-- PROMPT_CACHE_SIZE: Max cached prompts (default: 100)
-- HEALTH_CHECK_INTERVAL: Gateway health check interval (default: 60)
+환경 변수:
+- APP_NAME: 게이트웨이 이름 (기본값: "MCP_Gateway")
+- HOST: 바인딩할 호스트 (기본값: "127.0.0.1")
+- PORT: 수신할 포트 (기본값: 4444)
+- DATABASE_URL: SQLite 데이터베이스 URL (기본값: "sqlite:///./mcp.db")
+- BASIC_AUTH_USER: 관리자 사용자 이름 (기본값: "admin")
+- BASIC_AUTH_PASSWORD: 관리자 비밀번호 (기본값: "changeme")
+- LOG_LEVEL: 로깅 레벨 (기본값: "INFO")
+- SKIP_SSL_VERIFY: SSL 검증 비활성화 (기본값: False)
+- AUTH_REQUIRED: 인증 필요 여부 (기본값: True)
+- TRANSPORT_TYPE: 전송 메커니즘 (기본값: "all")
+- FEDERATION_ENABLED: 게이트웨이 페데레이션 활성화 (기본값: True)
+- DOCS_ALLOW_BASIC_AUTH: 문서에 기본 인증 허용 (기본값: False)
+- FEDERATION_DISCOVERY: 자동 검색 활성화 (기본값: False)
+- FEDERATION_PEERS: 피어 게이트웨이 URL 목록 (기본값: [])
+- RESOURCE_CACHE_SIZE: 최대 캐시 리소스 수 (기본값: 1000)
+- RESOURCE_CACHE_TTL: 캐시 TTL (초 단위, 기본값: 3600)
+- TOOL_TIMEOUT: 도구 호출 타임아웃 (기본값: 60)
+- PROMPT_CACHE_SIZE: 최대 캐시 프롬프트 수 (기본값: 100)
+- HEALTH_CHECK_INTERVAL: 게이트웨이 헬스 체크 간격 (기본값: 60)
 
-Examples:
+사용 예시:
     >>> from mcpgateway.config import Settings
     >>> s = Settings(basic_auth_user='admin', basic_auth_password='secret')
     >>> s.api_key
     'admin:secret'
     >>> s2 = Settings(transport_type='http')
-    >>> s2.validate_transport()  # no error
+    >>> s2.validate_transport()  # 오류 없음
     >>> s3 = Settings(transport_type='invalid')
     >>> try:
     ...     s3.validate_transport()
     ... except ValueError as e:
-    ...     print('error')
-    error
+    ...     print('오류')
+    오류
     >>> s4 = Settings(database_url='sqlite:///./test.db')
     >>> isinstance(s4.database_settings, dict)
     True
@@ -79,28 +79,31 @@ logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     """
-    MCP Gateway configuration settings.
+    MCP 게이트웨이 구성 설정 클래스.
 
-    Examples:
+    이 클래스는 MCP 게이트웨이의 모든 구성 설정을 관리하며,
+    환경 변수에서 값을 로드하고 유효성 검사를 수행합니다.
+
+    사용 예시:
         >>> from mcpgateway.config import Settings
         >>> s = Settings(basic_auth_user='admin', basic_auth_password='secret')
         >>> s.api_key
         'admin:secret'
         >>> s2 = Settings(transport_type='http')
-        >>> s2.validate_transport()  # no error
+        >>> s2.validate_transport()  # 오류 없음
         >>> s3 = Settings(transport_type='invalid')
         >>> try:
         ...     s3.validate_transport()
         ... except ValueError as e:
-        ...     print('error')
-        error
+        ...     print('오류')
+        오류
         >>> s4 = Settings(database_url='sqlite:///./test.db')
         >>> isinstance(s4.database_settings, dict)
         True
         >>> s5 = Settings()
         >>> s5.app_name
         'MCP_Gateway'
-        >>> s5.host in ('0.0.0.0', '127.0.0.1')  # Default can be either
+        >>> s5.host in ('0.0.0.0', '127.0.0.1')  # 기본값은 둘 중 하나일 수 있음
         True
         >>> s5.port
         4444
@@ -110,55 +113,64 @@ class Settings(BaseSettings):
         True
     """
 
-    # Basic Settings
-    app_name: str = "MCP_Gateway"
-    host: str = "127.0.0.1"
-    port: int = 4444
-    docs_allow_basic_auth: bool = False  # Allow basic auth for docs
-    database_url: str = "sqlite:///./mcp.db"
-    templates_dir: Path = Path("mcpgateway/templates")
-    # Absolute paths resolved at import-time (still override-able via env vars)
-    templates_dir: Path = files("mcpgateway") / "templates"
-    static_dir: Path = files("mcpgateway") / "static"
-    app_root_path: str = ""
+    # ===========================================
+    # 기본 설정
+    # ===========================================
+    app_name: str = "MCP_Gateway"                    # 애플리케이션 이름
+    host: str = "127.0.0.1"                         # 바인딩할 호스트 주소
+    port: int = 4444                                # 수신할 포트 번호
+    docs_allow_basic_auth: bool = False             # 문서 엔드포인트에 기본 인증 허용
+    database_url: str = "sqlite:///./mcp.db"        # 데이터베이스 연결 URL
+    # 임포트 시점에 절대 경로로 변환 (환경 변수로 재정의 가능)
+    templates_dir: Path = files("mcpgateway") / "templates"  # 템플릿 디렉토리 경로
+    static_dir: Path = files("mcpgateway") / "static"       # 정적 파일 디렉토리 경로
+    app_root_path: str = ""                         # 애플리케이션 루트 경로
 
-    # Protocol
-    protocol_version: str = "2025-03-26"
+    # ===========================================
+    # 프로토콜 설정
+    # ===========================================
+    protocol_version: str = "2025-03-26"           # 지원하는 MCP 프로토콜 버전
 
-    # Authentication
-    basic_auth_user: str = "admin"
-    basic_auth_password: str = "changeme"
-    jwt_secret_key: str = "my-test-key"
-    jwt_algorithm: str = "HS256"
-    auth_required: bool = True
-    token_expiry: int = 10080  # minutes
+    # ===========================================
+    # 인증 설정
+    # ===========================================
+    basic_auth_user: str = "admin"                 # 기본 인증 사용자 이름
+    basic_auth_password: str = "changeme"          # 기본 인증 비밀번호
+    jwt_secret_key: str = "my-test-key"            # JWT 서명용 시크릿 키
+    jwt_algorithm: str = "HS256"                   # JWT 서명 알고리즘
+    auth_required: bool = True                     # 인증 필요 여부
+    token_expiry: int = 10080                      # 토큰 만료 시간 (분 단위)
 
-    require_token_expiration: bool = Field(default=False, description="Require all JWT tokens to have expiration claims")  # Default to flexible mode for backward compatibility
+    require_token_expiration: bool = Field(default=False, description="모든 JWT 토큰에 만료 클레임 요구")  # 하위 호환성을 위해 기본적으로 유연 모드
 
-    # MCP Client Authentication
-    mcp_client_auth_enabled: bool = Field(default=True, description="Enable JWT authentication for MCP client operations")
+    # MCP 클라이언트 인증 설정
+    mcp_client_auth_enabled: bool = Field(default=True, description="MCP 클라이언트 작업에 JWT 인증 활성화")
     trust_proxy_auth: bool = Field(
         default=False,
-        description="Trust proxy authentication headers (required when mcp_client_auth_enabled=false)",
+        description="프록시 인증 헤더 신뢰 (mcp_client_auth_enabled=false일 때 필요)",
     )
-    proxy_user_header: str = Field(default="X-Authenticated-User", description="Header containing authenticated username from proxy")
+    proxy_user_header: str = Field(default="X-Authenticated-User", description="프록시에서 인증된 사용자 이름을 포함하는 헤더")
 
-    #  Encryption key phrase for auth storage
-    auth_encryption_secret: str = "my-test-salt"
+    # 인증 저장소용 암호화 키
+    auth_encryption_secret: str = "my-test-salt"    # 인증 데이터 암호화용 시크릿
 
-    # OAuth Configuration
-    oauth_request_timeout: int = Field(default=30, description="OAuth request timeout in seconds")
-    oauth_max_retries: int = Field(default=3, description="Maximum retries for OAuth token requests")
+    # OAuth 설정
+    oauth_request_timeout: int = Field(default=30, description="OAuth 요청 타임아웃 (초)")
+    oauth_max_retries: int = Field(default=3, description="OAuth 토큰 요청 최대 재시도 횟수")
 
-    # UI/Admin Feature Flags
-    mcpgateway_ui_enabled: bool = False
-    mcpgateway_admin_api_enabled: bool = False
-    mcpgateway_bulk_import_enabled: bool = True
-    mcpgateway_bulk_import_max_tools: int = 200
-    mcpgateway_bulk_import_rate_limit: int = 10
+    # ===========================================
+    # UI/관리 기능 플래그
+    # ===========================================
+    mcpgateway_ui_enabled: bool = False             # 관리 UI 활성화 여부
+    mcpgateway_admin_api_enabled: bool = False      # 관리 API 활성화 여부
+    mcpgateway_bulk_import_enabled: bool = True     # 대량 가져오기 기능 활성화
+    mcpgateway_bulk_import_max_tools: int = 200     # 대량 가져오기 최대 도구 수
+    mcpgateway_bulk_import_rate_limit: int = 10     # 대량 가져오기 속도 제한
 
-    # A2A (Agent-to-Agent) Feature Flags
-    mcpgateway_a2a_enabled: bool = True
+    # ===========================================
+    # A2A (Agent-to-Agent) 기능 플래그
+    # ===========================================
+    mcpgateway_a2a_enabled: bool = True             # A2A 기능 활성화 여부
     mcpgateway_a2a_max_agents: int = 100
     mcpgateway_a2a_default_timeout: int = 30
     mcpgateway_a2a_max_retries: int = 3
@@ -847,20 +859,20 @@ def extract_using_jq(data, jq_filter=""):
 
 def jsonpath_modifier(data: Any, jsonpath: str = "$[*]", mappings: Optional[Dict[str, str]] = None) -> Union[List, Dict]:
     """
-    Applies the given JSONPath expression and mappings to the data.
-    Only return data that is required by the user dynamically.
+    주어진 JSONPath 표현식과 매핑을 데이터에 적용합니다.
+    사용자가 동적으로 필요로 하는 데이터만 반환합니다.
 
     Args:
-        data: The JSON data to query.
-        jsonpath: The JSONPath expression to apply.
-        mappings: Optional dictionary of mappings where keys are new field names
-                  and values are JSONPath expressions.
+        data: 쿼리할 JSON 데이터
+        jsonpath: 적용할 JSONPath 표현식
+        mappings: 선택적 매핑 딕셔너리로, 키는 새 필드 이름이고
+                  값은 JSONPath 표현식입니다.
 
     Returns:
-        Union[List, Dict]: A list (or mapped list) or a Dict of extracted data.
+        Union[List, Dict]: 추출된 데이터의 리스트(또는 매핑된 리스트) 또는 Dict
 
     Raises:
-        HTTPException: If there's an error parsing or executing the JSONPath expressions.
+        HTTPException: JSONPath 표현식을 파싱하거나 실행하는 중 오류가 발생한 경우
 
     Examples:
         >>> jsonpath_modifier({'a': 1, 'b': 2}, '$.a')
@@ -872,43 +884,56 @@ def jsonpath_modifier(data: Any, jsonpath: str = "$[*]", mappings: Optional[Dict
         >>> jsonpath_modifier({'a': 1}, '$.b')
         []
     """
+    # jsonpath가 제공되지 않은 경우 기본값 설정
     if not jsonpath:
         jsonpath = "$[*]"
 
     try:
+        # 메인 JSONPath 표현식 파싱
         main_expr: JSONPath = parse(jsonpath)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid main JSONPath expression: {e}")
 
     try:
+        # 메인 JSONPath를 데이터에 적용하여 매치 찾기
         main_matches = main_expr.find(data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error executing main JSONPath: {e}")
 
+    # 매치된 값들 추출
     results = [match.value for match in main_matches]
 
+    # 매핑이 제공된 경우 추가 처리
     if mappings:
         mapped_results = []
         for item in results:
             mapped_item = {}
             for new_key, mapping_expr_str in mappings.items():
                 try:
+                    # 매핑 JSONPath 표현식 파싱
                     mapping_expr = parse(mapping_expr_str)
                 except Exception as e:
                     raise HTTPException(status_code=400, detail=f"Invalid mapping JSONPath for key '{new_key}': {e}")
                 try:
+                    # 매핑 JSONPath를 아이템에 적용
                     mapping_matches = mapping_expr.find(item)
                 except Exception as e:
                     raise HTTPException(status_code=400, detail=f"Error executing mapping JSONPath for key '{new_key}': {e}")
+
+                # 매핑 결과에 따라 값 설정
                 if not mapping_matches:
                     mapped_item[new_key] = None
                 elif len(mapping_matches) == 1:
                     mapped_item[new_key] = mapping_matches[0].value
                 else:
                     mapped_item[new_key] = [m.value for m in mapping_matches]
+
             mapped_results.append(mapped_item)
+
+        # 결과 업데이트
         results = mapped_results
 
+    # 단일 딕셔너리 결과인 경우 딕셔너리 반환, 그렇지 않으면 리스트 반환
     if len(results) == 1 and isinstance(results[0], dict):
         return results[0]
     return results
@@ -916,29 +941,31 @@ def jsonpath_modifier(data: Any, jsonpath: str = "$[*]", mappings: Optional[Dict
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Get cached settings instance.
+    """캐시된 설정 인스턴스를 가져옵니다.
 
     Returns:
-        Settings: A cached instance of the Settings class.
+        Settings: Settings 클래스의 캐시된 인스턴스
 
     Examples:
         >>> settings = get_settings()
         >>> isinstance(settings, Settings)
         True
-        >>> # Second call returns the same cached instance
+        >>> # 두 번째 호출은 동일한 캐시된 인스턴스를 반환
         >>> settings2 = get_settings()
         >>> settings is settings2
         True
     """
-    # Instantiate a fresh Pydantic Settings object,
-    # loading from env vars or .env exactly once.
+    # 새로운 Pydantic Settings 객체를 인스턴스화하여
+    # 환경 변수나 .env에서 정확히 한 번만 로드
     cfg = Settings()
-    # Validate that transport_type is correct; will
-    # raise if mis-configured.
+
+    # transport_type이 올바른지 검증 - 잘못 구성된 경우 예외 발생
     cfg.validate_transport()
-    # Ensure sqlite DB directories exist if needed.
+
+    # SQLite DB 디렉토리가 필요한 경우 존재하는지 확인
     cfg.validate_database()
-    # Return the one-and-only Settings instance (cached).
+
+    # 유일한 Settings 인스턴스 반환 (캐시됨)
     return cfg
 
 

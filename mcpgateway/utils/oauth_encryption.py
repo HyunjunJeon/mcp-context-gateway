@@ -4,10 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-OAuth Encryption Utilities.
+OAuth 암호화 유틸리티.
 
-This module provides encryption and decryption functions for OAuth client secrets
-using the AUTH_ENCRYPTION_SECRET from configuration.
+이 모듈은 구성의 AUTH_ENCRYPTION_SECRET를 사용하여 OAuth 클라이언트 시크릿에 대한
+암호화 및 복호화 기능을 제공합니다.
 """
 
 # Standard
@@ -24,22 +24,22 @@ logger = logging.getLogger(__name__)
 
 
 class OAuthEncryption:
-    """Handles encryption and decryption of OAuth client secrets."""
+    """OAuth 클라이언트 시크릿의 암호화 및 복호화를 처리합니다."""
 
     def __init__(self, encryption_secret: str):
-        """Initialize the encryption handler.
+        """암호화 핸들러를 초기화합니다.
 
         Args:
-            encryption_secret: Secret key for encryption/decryption
+            encryption_secret: 암호화/복호화용 시크릿 키
         """
         self.encryption_secret = encryption_secret.encode()
         self._fernet = None
 
     def _get_fernet(self) -> Fernet:
-        """Get or create Fernet instance for encryption.
+        """암호화를 위한 Fernet 인스턴스를 가져오거나 생성합니다.
 
         Returns:
-            Fernet instance for encryption/decryption
+            암호화/복호화용 Fernet 인스턴스
         """
         if self._fernet is None:
             # Derive a key from the encryption secret using PBKDF2
@@ -54,16 +54,16 @@ class OAuthEncryption:
         return self._fernet
 
     def encrypt_secret(self, plaintext: str) -> str:
-        """Encrypt a plaintext secret.
+        """평문 시크릿을 암호화합니다.
 
         Args:
-            plaintext: The secret to encrypt
+            plaintext: 암호화할 시크릿
 
         Returns:
-            Base64-encoded encrypted string
+            Base64로 인코딩된 암호화된 문자열
 
         Raises:
-            Exception: If encryption fails
+            Exception: 암호화 실패 시
         """
         try:
             fernet = self._get_fernet()

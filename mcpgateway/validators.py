@@ -1,41 +1,41 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/validators.py
-Copyright 2025
+"""위치: ./mcpgateway/validators.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti, Madhav Kandukuri
+저자: Mihai Criveti, Madhav Kandukuri
 
-SecurityValidator for MCP Gateway
-This module defines the `SecurityValidator` class, which provides centralized, configurable
-validation logic for user-generated content in MCP-based applications.
+MCP 게이트웨이를 위한 SecurityValidator
+이 모듈은 MCP 기반 애플리케이션에서 사용자 생성 콘텐츠에 대한 중앙 집중식,
+구성 가능한 검증 로직을 제공하는 `SecurityValidator` 클래스를 정의합니다.
 
-The validator enforces strict security and structural rules across common input types such as:
-- Display text (e.g., names, descriptions)
-- Identifiers and tool names
-- URIs and URLs
-- JSON object depth
-- Templates (including limited HTML/Jinja2)
-- MIME types
+검증기는 다음과 같은 일반적인 입력 유형에 대해 엄격한 보안 및 구조적 규칙을 적용합니다:
+- 표시 텍스트 (예: 이름, 설명)
+- 식별자 및 도구 이름
+- URI 및 URL
+- JSON 객체 깊이
+- 템플릿 (제한된 HTML/Jinja2 포함)
+- MIME 타입
 
-Key Features:
-- Pattern-based validation using settings-defined regex for HTML/script safety
-- Configurable max lengths and depth limits
-- Whitelist-based URL scheme and MIME type validation
-- Safe escaping of user-visible text fields
-- Reusable static/class methods for field-level and form-level validation
+주요 기능:
+- HTML/스크립트 안전을 위한 설정 정의 정규식을 사용하는 패턴 기반 검증
+- 구성 가능한 최대 길이 및 깊이 제한
+- 화이트리스트 기반 URL 스키마 및 MIME 타입 검증
+- 사용자 표시 텍스트 필드의 안전한 이스케이핑
+- 필드 수준 및 폼 수준 검증을 위한 재사용 가능한 정적/클래스 메소드
 
-Intended to be used with Pydantic or similar schema-driven systems to validate and sanitize
-user input in a consistent, centralized way.
+Pydantic 또는 유사한 스키마 기반 시스템과 함께 사용하여 사용자 입력을 일관되고
+중앙 집중적인 방식으로 검증하고 정리하도록 의도되었습니다.
 
-Dependencies:
-- Standard Library: re, html, logging, urllib.parse
-- First-party: `settings` from `mcpgateway.config`
+의존성:
+- 표준 라이브러리: re, html, logging, urllib.parse
+- 자사: `mcpgateway.config`의 `settings`
 
-Example usage:
+사용 예시:
     SecurityValidator.validate_name("my_tool", field_name="Tool Name")
     SecurityValidator.validate_url("https://example.com")
     SecurityValidator.validate_json_depth({...})
 
-Examples:
+예제:
     >>> from mcpgateway.validators import SecurityValidator
     >>> SecurityValidator.sanitize_display_text('<b>Test</b>', 'test')
     '&lt;b&gt;Test&lt;/b&gt;'

@@ -4,28 +4,30 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-MCP Gateway - Main FastAPI Application.
+MCP 게이트웨이 - 메인 FastAPI 애플리케이션.
 
-This module defines the core FastAPI application for the Model Context Protocol (MCP) Gateway.
-It serves as the entry point for handling all HTTP and WebSocket traffic.
+이 모듈은 Model Context Protocol (MCP) Gateway를 위한 핵심 FastAPI 애플리케이션을 정의합니다.
+모든 HTTP 및 WebSocket 트래픽을 처리하는 진입점 역할을 합니다.
 
-Features and Responsibilities:
-- Initializes and orchestrates services for tools, resources, prompts, servers, gateways, and roots.
-- Supports full MCP protocol operations: initialize, ping, notify, complete, and sample.
-- Integrates authentication (JWT and basic), CORS, caching, and middleware.
-- Serves a rich Admin UI for managing gateway entities via HTMX-based frontend.
-- Exposes routes for JSON-RPC, SSE, and WebSocket transports.
-- Manages application lifecycle including startup and graceful shutdown of all services.
+주요 기능 및 책임:
+- 도구, 리소스, 프롬프트, 서버, 게이트웨이 및 루트에 대한 서비스 초기화 및 조율
+- 완전한 MCP 프로토콜 작업 지원: 초기화, 핑, 알림, 완성 및 샘플링
+- JWT 및 기본 인증, CORS, 캐싱, 미들웨어 통합
+- HTMX 기반 프론트엔드를 통한 게이트웨이 엔티티 관리를 위한 풍부한 관리 UI 제공
+- JSON-RPC, SSE 및 WebSocket 전송을 위한 라우트 노출
+- 모든 서비스의 시작 및 정상 종료를 포함한 애플리케이션 라이프사이클 관리
 
-Structure:
-- Declares routers for MCP protocol operations and administration.
-- Registers dependencies (e.g., DB sessions, auth handlers).
-- Applies middleware including custom documentation protection.
-- Configures resource caching and session registry using pluggable backends.
-- Provides OpenAPI metadata and redirect handling depending on UI feature flags.
+구조:
+- MCP 프로토콜 작업 및 관리를 위한 라우터 선언
+- DB 세션, 인증 핸들러 등의 종속성 등록
+- 사용자 정의 문서 보호를 포함한 미들웨어 적용
+- 플러그형 백엔드를 사용한 리소스 캐싱 및 세션 레지스트리 구성
+- UI 기능 플래그에 따라 OpenAPI 메타데이터 및 리다이렉트 처리 제공
 """
 
-# Standard
+# ===========================================
+# 표준 라이브러리 임포트
+# ===========================================
 import asyncio
 from contextlib import asynccontextmanager
 import json
@@ -34,7 +36,10 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Union
 from urllib.parse import urlparse, urlunparse
 import uuid
 
-# Third-Party
+# ===========================================
+# 외부 라이브러리 임포트 (Third-Party)
+# ===========================================
+# FastAPI 및 관련 미들웨어 - 웹 프레임워크 및 HTTP 처리
 from fastapi import APIRouter, Body, Depends, FastAPI, HTTPException, Request, status, WebSocket, WebSocketDisconnect
 from fastapi.background import BackgroundTasks
 from fastapi.exception_handlers import request_validation_exception_handler as fastapi_default_validation_handler
@@ -43,6 +48,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# 데이터 검증 및 ORM
 from pydantic import ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -50,19 +57,32 @@ from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-# First-Party
+# ===========================================
+# 내부 모듈 임포트 (First-Party)
+# ===========================================
+# 버전 정보 및 관리 UI
 from mcpgateway import __version__
 from mcpgateway.admin import admin_router, set_logging_service
+
+# 데이터베이스 초기화 및 캐싱
 from mcpgateway.bootstrap_db import main as bootstrap_db
 from mcpgateway.cache import ResourceCache, SessionRegistry
+
+# 설정 및 데이터베이스 모델
 from mcpgateway.config import jsonpath_modifier, settings
 from mcpgateway.db import Prompt as DbPrompt
 from mcpgateway.db import PromptMetric, refresh_slugs_on_startup, SessionLocal
 from mcpgateway.db import Tool as DbTool
+
+# 핸들러 및 미들웨어
 from mcpgateway.handlers.sampling import SamplingHandler
 from mcpgateway.middleware.security_headers import SecurityHeadersMiddleware
+
+# 모델 및 관측성
 from mcpgateway.models import InitializeResult, ListResourceTemplatesResult, LogLevel, ResourceContent, Root
 from mcpgateway.observability import init_telemetry
+
+# 플러그인 프레임워크 및 라우터
 from mcpgateway.plugins.framework import PluginManager, PluginViolationError
 from mcpgateway.routers.well_known import router as well_known_router
 from mcpgateway.schemas import (
@@ -118,36 +138,46 @@ from mcpgateway.validation.jsonrpc import JSONRPCError
 # Import the admin routes from the new module
 from mcpgateway.version import router as version_router
 
-# Initialize logging service first
+# ===========================================
+# 애플리케이션 초기화
+# ===========================================
+
+# 1. 로깅 서비스 초기화 - 다른 모든 컴포넌트보다 먼저 설정되어야 함
 logging_service = LoggingService()
 logger = logging_service.get_logger("mcpgateway")
 
-# Share the logging service with admin module
+# 2. 관리 모듈과 로깅 서비스 공유 - 관리 UI에서 동일한 로깅 사용
 set_logging_service(logging_service)
 
-# Note: Logging configuration is handled by LoggingService during startup
-# Don't use basicConfig here as it conflicts with our dual logging setup
+# 주의: 로깅 설정은 LoggingService에서 시작 시 처리됨
+# 여기서 basicConfig을 사용하지 말 것 - 듀얼 로깅 설정과 충돌함
 
-# Wait for database to be ready before creating tables
-wait_for_db_ready(max_tries=int(settings.db_max_retries), interval=int(settings.db_retry_interval_ms) / 1000, sync=True)  # Converting ms to s
+# 3. 데이터베이스 준비 상태 확인 - 테이블 생성 전에 DB 연결 보장
+wait_for_db_ready(
+    max_tries=int(settings.db_max_retries),
+    interval=int(settings.db_retry_interval_ms) / 1000,  # ms를 초로 변환
+    sync=True
+)
 
-# Create database tables
+# 4. 데이터베이스 테이블 생성 - MCP 게이트웨이에 필요한 모든 테이블 초기화
 try:
     loop = asyncio.get_running_loop()
 except RuntimeError:
+    # 이벤트 루프가 없는 경우 (동기 컨텍스트) - 새로운 루프에서 실행
     asyncio.run(bootstrap_db())
 else:
+    # 이미 이벤트 루프가 실행 중인 경우 (비동기 컨텍스트) - 태스크로 실행
     loop.create_task(bootstrap_db())
 
-# Initialize plugin manager as a singleton.
+# 5. 플러그인 관리자 초기화 - 싱글톤 패턴으로 플러그인 생명주기 관리
 plugin_manager: PluginManager | None = PluginManager(settings.plugin_config_file) if settings.plugins_enabled else None
 
-# Initialize services
-tool_service = ToolService()
-resource_service = ResourceService()
-prompt_service = PromptService()
-gateway_service = GatewayService()
-root_service = RootService()
+# 6. 핵심 서비스 초기화 - MCP 게이트웨이의 주요 비즈니스 로직 컴포넌트들
+tool_service = ToolService()        # 도구 관리 서비스
+resource_service = ResourceService()  # 리소스 관리 서비스
+prompt_service = PromptService()     # 프롬프트 관리 서비스
+gateway_service = GatewayService()   # 게이트웨이 관리 서비스
+root_service = RootService()         # 루트 관리 서비스
 completion_service = CompletionService()
 sampling_handler = SamplingHandler()
 server_service = ServerService()
@@ -183,34 +213,39 @@ resource_cache = ResourceCache(max_size=settings.resource_cache_size, ttl=settin
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """
-    Manage the application's startup and shutdown lifecycle.
+    애플리케이션의 시작 및 종료 라이프사이클을 관리합니다.
 
-    The function initialises every core service on entry and then
-    shuts them down in reverse order on exit.
+    이 함수는 시작 시 모든 핵심 서비스를 초기화하고 종료 시 역순으로 종료합니다.
+    서비스 초기화 순서는 의존성 관계를 고려하여 결정됩니다.
 
     Args:
-        _app (FastAPI): FastAPI app
+        _app (FastAPI): FastAPI 애플리케이션 인스턴스
 
     Yields:
-        None
+        None: 애플리케이션이 실행되는 동안 제어를 양보
 
     Raises:
-        Exception: Any unhandled error that occurs during service
-            initialisation or shutdown is re-raised to the caller.
+        Exception: 서비스 초기화 또는 종료 중 발생하는 모든 처리되지 않은 오류는 호출자에게 다시 발생
     """
-    # Initialize logging service FIRST to ensure all logging goes to dual output
-    await logging_service.initialize()
-    logger.info("Starting MCP Gateway services")
+    # ===========================================
+    # 서비스 초기화 단계
+    # ===========================================
 
-    # Initialize observability (Phoenix tracing)
+    # 1. 로깅 서비스 초기화 - 듀얼 출력으로 모든 로깅이 전달되도록 가장 먼저 설정
+    await logging_service.initialize()
+    logger.info("MCP 게이트웨이 서비스 시작 중")
+
+    # 2. 관측성 초기화 (Phoenix 추적) - 애플리케이션 모니터링 및 추적 설정
     init_telemetry()
-    logger.info("Observability initialized")
+    logger.info("관측성 기능 초기화 완료")
 
     try:
+        # 3. 플러그인 관리자 초기화 - 설정된 경우에만
         if plugin_manager:
             await plugin_manager.initialize()
-            logger.info(f"Plugin manager initialized with {plugin_manager.plugin_count} plugins")
+            logger.info(f"플러그인 관리자 초기화 완료: {plugin_manager.plugin_count}개 플러그인 로드됨")
 
+        # 4. 글로벌 패스스루 헤더 설정 - 헤더 전달 기능이 활성화된 경우
         if settings.enable_header_passthrough:
             db_gen = get_db()
             db = next(db_gen)  # pylint: disable=stop-iteration-return
@@ -219,54 +254,71 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             finally:
                 db.close()
 
-        await tool_service.initialize()
-        await resource_service.initialize()
-        await prompt_service.initialize()
-        await gateway_service.initialize()
-        await root_service.initialize()
-        await completion_service.initialize()
-        await sampling_handler.initialize()
-        await export_service.initialize()
-        await import_service.initialize()
+        # 5. 핵심 비즈니스 서비스 초기화 - MCP 게이트웨이의 주요 기능 제공
+        await tool_service.initialize()        # 도구 서비스 초기화
+        await resource_service.initialize()    # 리소스 서비스 초기화
+        await prompt_service.initialize()      # 프롬프트 서비스 초기화
+        await gateway_service.initialize()     # 게이트웨이 서비스 초기화
+        await root_service.initialize()        # 루트 서비스 초기화
+        await completion_service.initialize()  # 완성 서비스 초기화
+        await sampling_handler.initialize()    # 샘플링 핸들러 초기화
+        await export_service.initialize()      # 내보내기 서비스 초기화
+        await import_service.initialize()      # 가져오기 서비스 초기화
+
+        # 6. A2A (Agent-to-Agent) 서비스 초기화 - 설정된 경우에만
         if a2a_service:
             await a2a_service.initialize()
-        await resource_cache.initialize()
-        await streamable_http_session.initialize()
+
+        # 7. 인프라 서비스 초기화
+        await resource_cache.initialize()      # 리소스 캐시 초기화
+        await streamable_http_session.initialize()  # 스트림 가능 HTTP 세션 초기화
+
+        # 8. 데이터베이스 슬러그 새로고침 - URL 슬러그 일관성 보장
         refresh_slugs_on_startup()
 
-        logger.info("All services initialized successfully")
+        logger.info("모든 서비스 초기화 완료")
 
-        # Reconfigure uvicorn loggers after startup to capture access logs in dual output
+        # 9. 시작 후 uvicorn 로거 재구성 - 액세스 로그를 듀얼 출력으로 캡처
         logging_service.configure_uvicorn_after_startup()
 
+        # 애플리케이션 실행 중 제어 양보
         yield
+
     except Exception as e:
-        logger.error(f"Error during startup: {str(e)}")
+        # 시작 중 오류 발생 시 로깅 후 재발생
+        logger.error(f"시작 중 오류 발생: {str(e)}")
         raise
+
     finally:
-        # Shutdown plugin manager
+        # ===========================================
+        # 서비스 종료 단계 (역순으로 진행)
+        # ===========================================
+
+        # 1. 플러그인 관리자 종료
         if plugin_manager:
             try:
                 await plugin_manager.shutdown()
-                logger.info("Plugin manager shutdown complete")
+                logger.info("플러그인 관리자 종료 완료")
             except Exception as e:
-                logger.error(f"Error shutting down plugin manager: {str(e)}")
-        logger.info("Shutting down MCP Gateway services")
-        # await stop_streamablehttp()
-        # Build service list conditionally
+                logger.error(f"플러그인 관리자 종료 중 오류: {str(e)}")
+
+        logger.info("MCP 게이트웨이 서비스 종료 중")
+
+        # 2. 서비스 종료 목록 생성 및 실행
+        # 역순으로 종료하여 의존성 관계 유지
         services_to_shutdown = [
-            resource_cache,
-            sampling_handler,
-            import_service,
-            export_service,
-            logging_service,
-            completion_service,
-            root_service,
-            gateway_service,
-            prompt_service,
-            resource_service,
-            tool_service,
-            streamable_http_session,
+            resource_cache,        # 리소스 캐시 종료
+            sampling_handler,      # 샘플링 핸들러 종료
+            import_service,        # 가져오기 서비스 종료
+            export_service,        # 내보내기 서비스 종료
+            logging_service,       # 로깅 서비스 종료
+            completion_service,    # 완성 서비스 종료
+            root_service,          # 루트 서비스 종료
+            gateway_service,       # 게이트웨이 서비스 종료
+            prompt_service,        # 프롬프트 서비스 종료
+            resource_service,      # 리소스 서비스 종료
+            tool_service,          # 도구 서비스 종료
+            streamable_http_session,  # 스트림 가능 HTTP 세션 종료
         ]
 
         if a2a_service:
@@ -596,20 +648,23 @@ a2a_router = APIRouter(prefix="/a2a", tags=["A2A Agents"])
 # Database dependency
 def get_db():
     """
-    Dependency function to provide a database session.
+    데이터베이스 세션을 제공하는 의존성 함수.
+
+    이 함수는 FastAPI의 의존성 주입 시스템에서 사용되며,
+    각 요청에 대해 새로운 데이터베이스 세션을 생성하고 관리합니다.
 
     Yields:
-        Session: A SQLAlchemy session object for interacting with the database.
+        Session: 데이터베이스와 상호작용하기 위한 SQLAlchemy 세션 객체
 
     Ensures:
-        The database session is closed after the request completes, even in the case of an exception.
+        요청이 완료된 후 데이터베이스 세션이 닫히며, 예외 발생 시에도 정리됨
 
     Examples:
-        >>> # Test that get_db returns a generator
+        >>> # get_db가 제너레이터를 반환하는지 테스트
         >>> db_gen = get_db()
         >>> hasattr(db_gen, '__next__')
         True
-        >>> # Test cleanup happens
+        >>> # 정리 작업이 수행되는지 테스트
         >>> try:
         ...     db = next(db_gen)
         ...     type(db).__name__
@@ -617,28 +672,31 @@ def get_db():
         ...     try:
         ...         next(db_gen)
         ...     except StopIteration:
-        ...         pass  # Expected - generator cleanup
+        ...         pass  # 예상됨 - 제너레이터 정리 작업
         'Session'
     """
+    # 새로운 데이터베이스 세션 생성
     db = SessionLocal()
     try:
+        # 세션을 호출자에게 양보 - 요청 처리에 사용됨
         yield db
     finally:
+        # 요청 완료 후 세션 정리 - 예외 발생 시에도 실행됨
         db.close()
 
 
 def require_api_key(api_key: str) -> None:
-    """Validates the provided API key.
+    """
+    제공된 API 키의 유효성을 검증합니다.
 
-    This function checks if the provided API key matches the expected one
-    based on the settings. If the validation fails, it raises an HTTPException
-    with a 401 Unauthorized status.
+    이 함수는 설정에 따라 제공된 API 키가 예상 값과 일치하는지 확인합니다.
+    검증에 실패하면 401 Unauthorized 상태의 HTTPException을 발생시킵니다.
 
     Args:
-        api_key (str): The API key provided by the user or client.
+        api_key (str): 사용자 또는 클라이언트가 제공한 API 키
 
     Raises:
-        HTTPException: If the API key is invalid, a 401 Unauthorized error is raised.
+        HTTPException: API 키가 유효하지 않은 경우 401 Unauthorized 오류 발생
 
     Examples:
         >>> from mcpgateway.config import settings
@@ -646,35 +704,40 @@ def require_api_key(api_key: str) -> None:
         >>> settings.basic_auth_user = "admin"
         >>> settings.basic_auth_password = "secret"
         >>>
-        >>> # Valid API key
-        >>> require_api_key("admin:secret")  # Should not raise
+        >>> # 유효한 API 키
+        >>> require_api_key("admin:secret")  # 예외 발생하지 않음
         >>>
-        >>> # Invalid API key
+        >>> # 유효하지 않은 API 키
         >>> try:
         ...     require_api_key("wrong:key")
         ... except HTTPException as e:
         ...     e.status_code
         401
     """
+    # 인증이 필요한 경우 API 키 검증 수행
     if settings.auth_required:
+        # 설정된 사용자명과 비밀번호로 예상 API 키 생성
         expected = f"{settings.basic_auth_user}:{settings.basic_auth_password}"
+
+        # 제공된 API 키와 예상 값 비교
         if api_key != expected:
+            # 유효하지 않은 경우 인증 오류 발생
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
 
 async def invalidate_resource_cache(uri: Optional[str] = None) -> None:
     """
-    Invalidates the resource cache.
+    리소스 캐시를 무효화합니다.
 
-    If a specific URI is provided, only that resource will be removed from the cache.
-    If no URI is provided, the entire resource cache will be cleared.
+    특정 URI가 제공되면 해당 리소스만 캐시에서 제거됩니다.
+    URI가 제공되지 않으면 전체 리소스 캐시가 정리됩니다.
 
     Args:
-        uri (Optional[str]): The URI of the resource to invalidate from the cache. If None, the entire cache is cleared.
+        uri (Optional[str]): 캐시에서 무효화할 리소스의 URI. None이면 전체 캐시가 정리됨
 
     Examples:
         >>> import asyncio
-        >>> # Test clearing specific URI from cache
+        >>> # 특정 URI를 캐시에서 제거하는 테스트
         >>> resource_cache.set("/test/resource", {"content": "test data"})
         >>> resource_cache.get("/test/resource") is not None
         True
@@ -682,52 +745,65 @@ async def invalidate_resource_cache(uri: Optional[str] = None) -> None:
         >>> resource_cache.get("/test/resource") is None
         True
         >>>
-        >>> # Test clearing entire cache
+        >>> # 전체 캐시를 정리하는 테스트
         >>> resource_cache.set("/resource1", {"content": "data1"})
         >>> resource_cache.set("/resource2", {"content": "data2"})
         >>> asyncio.run(invalidate_resource_cache())
         >>> resource_cache.get("/resource1") is None and resource_cache.get("/resource2") is None
         True
     """
+    # 특정 URI가 제공된 경우 해당 리소스만 캐시에서 제거
     if uri:
         resource_cache.delete(uri)
     else:
+        # URI가 제공되지 않은 경우 전체 캐시 정리
         resource_cache.clear()
 
 
 def get_protocol_from_request(request: Request) -> str:
     """
-    Return "https" or "http" based on:
-     1) X-Forwarded-Proto (if set by a proxy)
-     2) request.url.scheme  (e.g. when Gunicorn/Uvicorn is terminating TLS)
+    요청으로부터 프로토콜("https" 또는 "http")을 반환합니다.
+
+    다음 순서로 프로토콜을 결정합니다:
+     1) X-Forwarded-Proto 헤더 (프록시가 설정한 경우)
+     2) request.url.scheme (Gunicorn/Uvicorn이 TLS를 종료하는 경우)
 
     Args:
-        request (Request): The FastAPI request object.
+        request (Request): FastAPI 요청 객체
 
     Returns:
-        str: The protocol used for the request, either "http" or "https".
+        str: 요청에 사용된 프로토콜("http" 또는 "https")
     """
+    # 프록시가 설정한 X-Forwarded-Proto 헤더 확인
     forwarded = request.headers.get("x-forwarded-proto")
     if forwarded:
-        # may be a comma-separated list; take the first
+        # 콤마로 구분된 목록일 수 있음 - 첫 번째 값 사용
         return forwarded.split(",")[0].strip()
+
+    # 프록시 헤더가 없는 경우 요청 URL의 스키마 반환
     return request.url.scheme
 
 
 def update_url_protocol(request: Request) -> str:
     """
-    Update the base URL protocol based on the request's scheme or forwarded headers.
+    요청의 스키마 또는 전달된 헤더를 기반으로 기본 URL 프로토콜을 업데이트합니다.
 
     Args:
-        request (Request): The FastAPI request object.
+        request (Request): FastAPI 요청 객체
 
     Returns:
-        str: The base URL with the correct protocol.
+        str: 올바른 프로토콜이 적용된 기본 URL
     """
+    # 현재 기본 URL 파싱
     parsed = urlparse(str(request.base_url))
+
+    # 요청으로부터 올바른 프로토콜 가져오기
     proto = get_protocol_from_request(request)
+
+    # 파싱된 URL의 스키마 변경
     new_parsed = parsed._replace(scheme=proto)
-    # urlunparse keeps netloc and path intact
+
+    # urlunparse는 netloc와 path를 그대로 유지함
     return urlunparse(new_parsed).rstrip("/")
 
 
@@ -735,29 +811,33 @@ def update_url_protocol(request: Request) -> str:
 @protocol_router.post("/initialize")
 async def initialize(request: Request, user: str = Depends(require_auth)) -> InitializeResult:
     """
-    Initialize a protocol.
+    프로토콜을 초기화합니다.
 
-    This endpoint handles the initialization process of a protocol by accepting
-    a JSON request body and processing it. The `require_auth` dependency ensures that
-    the user is authenticated before proceeding.
+    이 엔드포인트는 JSON 요청 본문을 받아 프로토콜의 초기화 과정을 처리합니다.
+    `require_auth` 의존성은 진행 전에 사용자가 인증되었음을 보장합니다.
 
     Args:
-        request (Request): The incoming request object containing the JSON body.
-        user (str): The authenticated user (from `require_auth` dependency).
+        request (Request): JSON 본문을 포함하는 들어오는 요청 객체
+        user (str): 인증된 사용자 (`require_auth` 의존성에서 가져옴)
 
     Returns:
-        InitializeResult: The result of the initialization process.
+        InitializeResult: 초기화 과정의 결과
 
     Raises:
-        HTTPException: If the request body contains invalid JSON, a 400 Bad Request error is raised.
+        HTTPException: 요청 본문에 유효하지 않은 JSON이 포함된 경우 400 Bad Request 오류 발생
     """
     try:
+        # 요청 본문에서 JSON 데이터 추출
         body = await request.json()
 
+        # 인증된 사용자가 프로토콜을 초기화하고 있음을 로깅
         logger.debug(f"Authenticated user {user} is initializing the protocol.")
+
+        # 세션 레지스트리를 통해 초기화 로직 처리
         return await session_registry.handle_initialize_logic(body)
 
     except json.JSONDecodeError:
+        # 유효하지 않은 JSON인 경우 클라이언트 오류 반환
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid JSON in request body",
@@ -767,31 +847,41 @@ async def initialize(request: Request, user: str = Depends(require_auth)) -> Ini
 @protocol_router.post("/ping")
 async def ping(request: Request, user: str = Depends(require_auth)) -> JSONResponse:
     """
-    Handle a ping request according to the MCP specification.
+    MCP 사양에 따라 ping 요청을 처리합니다.
 
-    This endpoint expects a JSON-RPC request with the method "ping" and responds
-    with a JSON-RPC response containing an empty result, as required by the protocol.
+    이 엔드포인트는 "ping" 메소드를 가진 JSON-RPC 요청을 기대하며,
+    프로토콜에서 요구하는 대로 빈 결과를 포함한 JSON-RPC 응답을 반환합니다.
 
     Args:
-        request (Request): The incoming FastAPI request.
-        user (str): The authenticated user (dependency injection).
+        request (Request): 들어오는 FastAPI 요청
+        user (str): 인증된 사용자 (의존성 주입)
 
     Returns:
-        JSONResponse: A JSON-RPC response with an empty result or an error response.
+        JSONResponse: 빈 결과가 포함된 JSON-RPC 응답 또는 오류 응답
 
     Raises:
-        HTTPException: If the request method is not "ping".
+        HTTPException: 요청 메소드가 "ping"이 아닌 경우
     """
     try:
+        # 요청 본문에서 JSON 데이터 파싱
         body: dict = await request.json()
+
+        # 메소드가 "ping"인지 검증
         if body.get("method") != "ping":
             raise HTTPException(status_code=400, detail="Invalid method")
+
+        # 요청 ID 추출
         req_id: str = body.get("id")
+
+        # 인증된 사용자가 ping 요청을 보냈음을 로깅
         logger.debug(f"Authenticated user {user} sent ping request.")
-        # Return an empty result per the MCP ping specification.
+
+        # MCP ping 사양에 따라 빈 결과 반환
         response: dict = {"jsonrpc": "2.0", "id": req_id, "result": {}}
         return JSONResponse(content=response)
+
     except Exception as e:
+        # 예외 발생 시 JSON-RPC 오류 응답 생성
         error_response: dict = {
             "jsonrpc": "2.0",
             "id": body.get("id") if "body" in locals() else None,

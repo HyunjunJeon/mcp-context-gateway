@@ -4,11 +4,10 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Keval Mahajan
 
-MCP Gateway Resilient HTTP Client with Retry Logic.
-This module provides a resilient HTTP client that automatically retries requests
-in the event of certain errors or status codes. It implements exponential backoff
-with jitter for retrying requests, making it suitable for use in environments where
-network reliability is a concern or when dealing with rate-limited APIs.
+MCP Gateway 탄력적 HTTP 클라이언트 (재시도 로직 포함).
+이 모듈은 특정 오류나 상태 코드 발생 시 요청을 자동으로 재시도하는 탄력적 HTTP 클라이언트를 제공합니다.
+지터와 함께 지수 백오프를 구현하여 요청을 재시도하므로, 네트워크 신뢰성이 우려되는 환경이나
+속도 제한이 있는 API를 다룰 때 적합합니다.
 
 Key Features:
 - Automatic retry logic for transient failures

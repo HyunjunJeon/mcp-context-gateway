@@ -4,22 +4,22 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-MCP Gateway Centralized for Pydantic validation error, SQL exception.
-This module provides centralized error formatting for the MCP Gateway,
-transforming technical Pydantic validation errors and SQLAlchemy database
-exceptions into user-friendly messages suitable for API responses.
+MCP 게이트웨이 중앙 집중식 오류 포매터 (Pydantic 검증 오류, SQL 예외용).
+이 모듈은 MCP 게이트웨이를 위한 중앙 집중식 오류 포매팅을 제공하며,
+기술적인 Pydantic 검증 오류와 SQLAlchemy 데이터베이스 예외를
+API 응답에 적합한 사용자 친화적인 메시지로 변환합니다.
 
-The ErrorFormatter class handles:
-- Pydantic ValidationError formatting
-- SQLAlchemy DatabaseError and IntegrityError formatting
-- Mapping technical error messages to user-friendly explanations
-- Consistent error response structure
+ErrorFormatter 클래스는 다음을 처리합니다:
+- Pydantic ValidationError 포매팅
+- SQLAlchemy DatabaseError 및 IntegrityError 포매팅
+- 기술적인 오류 메시지를 사용자 친화적인 설명으로 매핑
+- 일관된 오류 응답 구조
 
-Examples:
+사용 예시:
     >>> from mcpgateway.utils.error_formatter import ErrorFormatter
     >>> from pydantic import ValidationError
     >>>
-    >>> # Format validation errors
+    >>> # 검증 오류 포매팅
     >>> formatter = ErrorFormatter()
     >>> # formatted_error = formatter.format_validation_error(validation_error)
 """
@@ -40,13 +40,13 @@ logger = logging_service.get_logger(__name__)
 
 
 class ErrorFormatter:
-    """Transform technical errors into user-friendly messages.
+    """기술적인 오류를 사용자 친화적인 메시지로 변환합니다.
 
-    Provides static methods to convert Pydantic validation errors and
-    SQLAlchemy database exceptions into consistent, user-friendly error
-    responses suitable for API consumption.
+    Pydantic 검증 오류와 SQLAlchemy 데이터베이스 예외를
+    API 소비에 적합한 일관된 사용자 친화적인 오류 응답으로 변환하는
+    정적 메서드를 제공합니다.
 
-    Examples:
+    사용 예시:
         >>> formatter = ErrorFormatter()
         >>> isinstance(formatter, ErrorFormatter)
         True

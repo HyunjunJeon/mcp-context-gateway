@@ -4,23 +4,22 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-Federation Request Forwarding.
+페데레이션 요청 포워딩.
 
-This module implements request forwarding for federated MCP Gateways.
-It handles:
-- Request routing to appropriate gateways
-- Response aggregation
-- Error handling and retry logic
-- Request/response transformation
+연합된 MCP 게이트웨이들을 위한 요청 포워딩을 구현합니다.
+다음을 처리합니다:
+- 적절한 게이트웨이로의 요청 라우팅
+- 응답 집계
+- 에러 처리 및 재시도 로직
+- 요청/응답 변환
 
-The ForwardingService class provides the main interface for forwarding
-requests across federated gateways, including tool invocations and
-resource reads.
+ForwardingService 클래스는 도구 호출 및 리소스 읽기를 포함한
+연합 게이트웨이들 간 요청 포워딩을 위한 주요 인터페이스를 제공합니다.
 
-Examples:
+사용 예시:
     >>> from mcpgateway.federation.forward import ForwardingService
     >>> service = ForwardingService()
-    >>> # Forward requests to gateways
+    >>> # 게이트웨이로 요청 포워딩
     >>> # service.forward_request(db, "tools/list")
 """
 
@@ -48,43 +47,42 @@ logger = logging_service.get_logger(__name__)
 
 
 class ForwardingError(Exception):
-    """Base class for forwarding-related errors.
+    """포워딩 관련 에러들의 기본 클래스.
 
-    This exception is raised when request forwarding operations fail,
-    including network errors, gateway unavailability, or invalid responses.
+    요청 포워딩 작업이 실패할 때 발생하는 예외로,
+    네트워크 에러, 게이트웨이 사용 불가, 잘못된 응답 등을 포함합니다.
 
-    Examples:
-        >>> raise ForwardingError("Gateway timeout")
+    사용 예시:
+        >>> raise ForwardingError("게이트웨이 타임아웃")
         Traceback (most recent call last):
             ...
-        mcpgateway.federation.forward.ForwardingError: Gateway timeout
+        mcpgateway.federation.forward.ForwardingError: 게이트웨이 타임아웃
 
         >>> try:
-        ...     raise ForwardingError("Invalid response format")
+        ...     raise ForwardingError("잘못된 응답 형식")
         ... except ForwardingError as e:
-        ...     print(f"Caught: {e}")
-        Caught: Invalid response format
+        ...     print(f"캐치됨: {e}")
+        캐치됨: 잘못된 응답 형식
     """
 
 
 class ForwardingService:
-    """Service for handling request forwarding across gateways.
+    """게이트웨이들 간 요청 포워딩을 처리하는 서비스.
 
-    Handles:
-    - Request routing
-    - Response aggregation
-    - Error handling
-    - Request transformation
+    다음을 처리합니다:
+    - 요청 라우팅
+    - 응답 집계
+    - 에러 처리
+    - 요청 변환
     """
 
     def __init__(self):
-        """Initialize forwarding service.
+        """포워딩 서비스 초기화.
 
-        Sets up HTTP client with configured timeout and SSL verification settings,
-        and initializes tracking structures for active requests, request history,
-        and gateway tool caches.
+        구성된 타임아웃과 SSL 검증 설정으로 HTTP 클라이언트를 설정하고,
+        활성 요청, 요청 히스토리, 게이트웨이 도구 캐시를 위한 추적 구조를 초기화합니다.
 
-        Examples:
+        사용 예시:
             >>> service = ForwardingService()
             >>> isinstance(service._http_client, httpx.AsyncClient)
             True
@@ -95,26 +93,27 @@ class ForwardingService:
             >>> service._gateway_tools
             {}
         """
+        # 설정된 타임아웃과 SSL 검증으로 HTTP 클라이언트 초기화
         self._http_client = httpx.AsyncClient(timeout=settings.federation_timeout, verify=not settings.skip_ssl_verify)
 
-        # Track active requests
+        # 활성 요청들을 추적
         self._active_requests: Dict[str, asyncio.Task] = {}
 
-        # Request history for rate limiting
+        # 속도 제한을 위한 요청 히스토리
         self._request_history: Dict[str, List[datetime]] = {}
 
-        # Cache gateway information
+        # 게이트웨이 정보 캐시
         self._gateway_tools: Dict[int, Set[str]] = {}
 
     async def start(self) -> None:
-        """Start forwarding service."""
-        logger.info("Request forwarding service started")
+        """포워딩 서비스 시작."""
+        logger.info("요청 포워딩 서비스 시작됨")
 
     async def stop(self) -> None:
-        """Stop forwarding service."""
-        # Cancel active requests
+        """포워딩 서비스 중지."""
+        # 활성 요청들 취소
         for request_id, task in self._active_requests.items():
-            logger.info(f"Cancelling request {request_id}")
+            logger.info(f"요청 취소: {request_id}")
             task.cancel()
             try:
                 await task
@@ -122,7 +121,7 @@ class ForwardingService:
                 pass
 
         await self._http_client.aclose()
-        logger.info("Request forwarding service stopped")
+        logger.info("요청 포워딩 서비스 중지됨")
 
     async def forward_request(
         self,
@@ -132,34 +131,34 @@ class ForwardingService:
         target_gateway_id: Optional[int] = None,
         request_headers: Optional[Dict[str, str]] = None,
     ) -> Any:
-        """Forward a request to gateway(s).
+        """게이트웨이(들)로 요청을 포워딩.
 
-        Routes requests to specific gateways or broadcasts to all active gateways
-        based on the target_gateway_id parameter. Handles both targeted and
-        broadcast forwarding scenarios with proper error handling.
+        target_gateway_id 매개변수를 기반으로 특정 게이트웨이로 라우팅하거나
+        모든 활성 게이트웨이로 브로드캐스트합니다. 대상 지정 및 브로드캐스트
+        포워딩 시나리오를 모두 적절한 에러 처리와 함께 처리합니다.
 
         Args:
-            db: Database session for gateway lookups
-            method: RPC method name (e.g., "tools/list", "resources/read")
-            params: Optional method parameters as key-value pairs
-            target_gateway_id: Optional specific gateway ID for targeted forwarding
-            request_headers (Optional[Dict[str, str]], optional): Headers from the request to pass through.
-                Defaults to None.
+            db: 게이트웨이 조회를 위한 데이터베이스 세션
+            method: RPC 메소드 이름 (예: "tools/list", "resources/read")
+            params: 선택적 메소드 매개변수들 (키-값 쌍)
+            target_gateway_id: 대상 지정 포워딩을 위한 특정 게이트웨이 ID
+            request_headers (Optional[Dict[str, str]], optional): 전달할 요청 헤더들.
+                기본값: None.
 
         Returns:
-            Any: Single gateway response for targeted requests (when target_gateway_id
-                is provided), or list of responses from all active gateways for
-                broadcast requests (when target_gateway_id is None).
+            Any: 대상 지정 요청 시 단일 게이트웨이 응답 (target_gateway_id 제공 시),
+                또는 브로드캐스트 요청 시 모든 활성 게이트웨이의 응답 목록
+                (target_gateway_id가 None일 때).
 
         Raises:
-            ForwardingError: If forwarding fails due to network issues,
-                invalid gateway, or all gateways failing
+            ForwardingError: 네트워크 문제, 잘못된 게이트웨이, 모든 게이트웨이 실패 등으로
+                포워딩이 실패한 경우
 
-        Examples:
+        사용 예시:
             >>> import asyncio
             >>> from unittest.mock import Mock, AsyncMock
             >>>
-            >>> # Test targeted forwarding
+            >>> # 대상 지정 포워딩 테스트
             >>> service = ForwardingService()
             >>> service._forward_to_gateway = AsyncMock(return_value={"status": "ok"})
             >>> db = Mock()
@@ -167,30 +166,30 @@ class ForwardingService:
             >>> result
             {'status': 'ok'}
 
-            >>> # Test broadcast forwarding
+            >>> # 브로드캐스트 포워딩 테스트
             >>> service._forward_to_all = AsyncMock(return_value=[{"gateway1": "ok"}, {"gateway2": "ok"}])
             >>> results = asyncio.run(service.forward_request(db, "tools/list"))
             >>> len(results)
             2
 
-            >>> # Test error handling
+            >>> # 에러 처리 테스트
             >>> service._forward_to_gateway = AsyncMock(side_effect=Exception("Network error"))
             >>> try:
             ...     asyncio.run(service.forward_request(db, "test", target_gateway_id=1))
             ... except ForwardingError as e:
-            ...     print("Error:", str(e))
-            Error: Forward request failed: Network error
+            ...     print("에러:", str(e))
+            에러: Forward request failed: Network error
         """
         try:
             if target_gateway_id:
-                # Forward to specific gateway
+                # 특정 게이트웨이로 포워딩
                 return await self._forward_to_gateway(db, target_gateway_id, method, params, request_headers)
 
-            # Forward to all relevant gateways - headers are passed to each gateway
+            # 모든 관련 게이트웨이로 포워딩 - 헤더들이 각 게이트웨이로 전달됨
             return await self._forward_to_all(db, method, params, request_headers)
 
         except Exception as e:
-            raise ForwardingError(f"Forward request failed: {str(e)}")
+            raise ForwardingError(f"포워딩 요청 실패: {str(e)}")
 
     async def forward_tool_request(self, db: Session, tool_name: str, arguments: Dict[str, Any], request_headers: Optional[Dict[str, str]] = None) -> ToolResult:
         """Forward a tool invocation request.

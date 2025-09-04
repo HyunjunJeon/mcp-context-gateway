@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Location: ./mcpgateway/observability.py
-Copyright 2025
+"""위치: ./mcpgateway/observability.py
+저작권 2025
 SPDX-License-Identifier: Apache-2.0
-Authors: Mihai Criveti
+저자: Mihai Criveti
 
-Vendor-agnostic OpenTelemetry instrumentation for MCP Gateway.
-Supports any OTLP-compatible backend (Jaeger, Zipkin, Tempo, Phoenix, etc.).
+MCP 게이트웨이를 위한 벤더 독립적인 OpenTelemetry 계측.
+모든 OTLP 호환 백엔드 (Jaeger, Zipkin, Tempo, Phoenix 등)를 지원합니다.
 """
 
 # Standard
@@ -72,17 +72,17 @@ _TRACER = None
 
 
 def init_telemetry():
-    """Initialize OpenTelemetry with configurable backend.
+    """구성 가능한 백엔드를 사용하여 OpenTelemetry를 초기화합니다.
 
-    Supports multiple backends via environment variables:
-    - OTEL_TRACES_EXPORTER: Exporter type (otlp, jaeger, zipkin, console, none)
-    - OTEL_EXPORTER_OTLP_ENDPOINT: OTLP endpoint (for otlp exporter)
-    - OTEL_EXPORTER_JAEGER_ENDPOINT: Jaeger endpoint (for jaeger exporter)
-    - OTEL_EXPORTER_ZIPKIN_ENDPOINT: Zipkin endpoint (for zipkin exporter)
-    - OTEL_ENABLE_OBSERVABILITY: Set to 'false' to disable completely
+    환경 변수를 통해 여러 백엔드를 지원합니다:
+    - OTEL_TRACES_EXPORTER: 익스포터 타입 (otlp, jaeger, zipkin, console, none)
+    - OTEL_EXPORTER_OTLP_ENDPOINT: OTLP 엔드포인트 (otlp 익스포터용)
+    - OTEL_EXPORTER_JAEGER_ENDPOINT: Jaeger 엔드포인트 (jaeger 익스포터용)
+    - OTEL_EXPORTER_ZIPKIN_ENDPOINT: Zipkin 엔드포인트 (zipkin 익스포터용)
+    - OTEL_ENABLE_OBSERVABILITY: 완전히 비활성화하려면 'false'로 설정
 
     Returns:
-        The initialized tracer instance or None if disabled.
+        초기화된 트레이서 인스턴스 또는 비활성화된 경우 None.
     """
     # pylint: disable=global-statement
     global _TRACER
@@ -223,14 +223,14 @@ def init_telemetry():
 
 def trace_operation(operation_name: str, attributes: dict = None):
     """
-    Simple decorator to trace any operation.
+    모든 작업을 추적하기 위한 간단한 데코레이터.
 
     Args:
-        operation_name: Name of the operation to trace (e.g., "tool.invoke").
-        attributes: Optional dictionary of attributes to add to the span.
+        operation_name: 추적할 작업의 이름 (예: "tool.invoke").
+        attributes: 스팬에 추가할 선택적 속성 딕셔너리.
 
     Returns:
-        Decorator function that wraps the target function with tracing.
+        대상 함수를 추적으로 감싸는 데코레이터 함수.
 
     Usage:
         @trace_operation("tool.invoke", {"tool.name": "calculator"})
@@ -295,18 +295,18 @@ def trace_operation(operation_name: str, attributes: dict = None):
 
 def create_span(name: str, attributes: dict = None):
     """
-    Create a span for manual instrumentation.
+    수동 계측을 위한 스팬을 생성합니다.
 
     Args:
-        name: Name of the span to create (e.g., "database.query").
-        attributes: Optional dictionary of attributes to add to the span.
+        name: 생성할 스팬의 이름 (예: "database.query").
+        attributes: 스팬에 추가할 선택적 속성 딕셔너리.
 
     Returns:
-        Context manager that creates and manages the span lifecycle.
+        스팬 라이프사이클을 생성하고 관리하는 컨텍스트 관리자.
 
     Usage:
         with create_span("database.query", {"db.statement": "SELECT * FROM tools"}):
-            # Your code here
+            # 코드 작성
             pass
     """
     if not _TRACER or not OTEL_AVAILABLE:

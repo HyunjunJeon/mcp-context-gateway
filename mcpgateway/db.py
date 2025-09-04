@@ -4,16 +4,16 @@ Copyright 2025
 SPDX-License-Identifier: Apache-2.0
 Authors: Mihai Criveti
 
-MCP Gateway Database Models.
-This module defines SQLAlchemy models for storing MCP entities including:
-- Tools with input schema validation
-- Resources with subscription tracking
-- Prompts with argument templates
-- Federated gateways with capability tracking
-- Updated to record server associations independently using many-to-many relationships,
-- and to record tool execution metrics.
+MCP 게이트웨이 데이터베이스 모델.
+이 모듈은 MCP 엔티티를 저장하기 위한 SQLAlchemy 모델을 정의합니다:
+- 입력 스키마 검증이 포함된 도구
+- 구독 추적이 포함된 리소스
+- 인자 템플릿이 포함된 프롬프트
+- 기능 추적이 포함된 페데레이션 게이트웨이
+- 다대다 관계를 사용하여 서버 연결을 독립적으로 기록하도록 업데이트됨
+- 도구 실행 메트릭을 기록하도록 업데이트됨
 
-Examples:
+사용 예시:
     >>> from mcpgateway.db import connect_args
     >>> isinstance(connect_args, dict)
     True
@@ -42,54 +42,48 @@ from mcpgateway.utils.create_slug import slugify
 from mcpgateway.utils.db_isready import wait_for_db_ready
 from mcpgateway.validators import SecurityValidator
 
-# ---------------------------------------------------------------------------
-# 1. Parse the URL so we can inspect backend ("postgresql", "sqlite", ...)
-#    and the specific driver ("psycopg2", "asyncpg", empty string = default).
-# ---------------------------------------------------------------------------
+# ===========================================
+# 데이터베이스 연결 설정
+# ===========================================
+
+# 1. URL 파싱 - 백엔드("postgresql", "sqlite", ...) 및 특정 드라이버("psycopg2", "asyncpg", 빈 문자열 = 기본값) 검사
 url = make_url(settings.database_url)
-backend = url.get_backend_name()  # e.g. 'postgresql', 'sqlite'
+backend = url.get_backend_name()  # 예: 'postgresql', 'sqlite'
 driver = url.get_driver_name() or "default"
 
-# Start with an empty dict and add options only when the driver can accept
-# them; this prevents unexpected TypeError at connect time.
+# 연결 시점에 예기치 않은 TypeError를 방지하기 위해 드라이버가 수용할 수 있는 옵션만 추가
 connect_args: dict[str, object] = {}
 
-# ---------------------------------------------------------------------------
-# 2. PostgreSQL (synchronous psycopg2 only)
-#    The keep-alive parameters below are recognised exclusively by libpq /
-#    psycopg2 and let the kernel detect broken network links quickly.
-# ---------------------------------------------------------------------------
+# 2. PostgreSQL (동기 psycopg2 전용)
+#    아래 keep-alive 파라미터는 libpq/psycopg2에서만 인식되며,
+#    커널이 깨진 네트워크 링크를 빠르게 감지할 수 있게 함
 if backend == "postgresql" and driver in ("psycopg2", "default", ""):
     connect_args.update(
-        keepalives=1,  # enable TCP keep-alive probes
-        keepalives_idle=30,  # seconds of idleness before first probe
-        keepalives_interval=5,  # seconds between probes
-        keepalives_count=5,  # drop the link after N failed probes
+        keepalives=1,        # TCP keep-alive 프로브 활성화
+        keepalives_idle=30,  # 첫 번째 프로브 전 유휴 시간 (초)
+        keepalives_interval=5,  # 프로브 간 간격 (초)
+        keepalives_count=5,  # N번 실패 후 링크 끊기
     )
 
-# ---------------------------------------------------------------------------
-# 3. SQLite (optional) - only one extra flag and it is *SQLite-specific*.
-# ---------------------------------------------------------------------------
+# 3. SQLite (선택사항) - SQLite 전용 플래그 하나만 있음
 elif backend == "sqlite":
-    # Allow pooled connections to hop across threads.
+    # 풀링된 연결이 스레드 간에 이동할 수 있도록 허용
     connect_args["check_same_thread"] = False
 
-# 4. Other backends (MySQL, MSSQL, etc.) leave `connect_args` empty.
+# 4. 다른 백엔드 (MySQL, MSSQL 등)는 connect_args를 비워둠
 
-# ---------------------------------------------------------------------------
-# 5. Build the Engine with a single, clean connect_args mapping.
-# ---------------------------------------------------------------------------
+# 5. 단일 connect_args 매핑으로 엔진 구축
 if backend == "sqlite":
-    # SQLite doesn't support pool overflow/timeout parameters
+    # SQLite는 풀 오버플로/타임아웃 파라미터를 지원하지 않음
     engine = create_engine(
         settings.database_url,
         connect_args=connect_args,
     )
 else:
-    # Other databases support full pooling configuration
+    # 다른 데이터베이스는 전체 풀링 구성 지원
     engine = create_engine(
         settings.database_url,
-        pool_pre_ping=True,  # quick liveness check per checkout
+        pool_pre_ping=True,  # 체크아웃 시 빠른 활성 상태 확인
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
         pool_timeout=settings.db_pool_timeout,
@@ -102,11 +96,10 @@ else:
 # 6. Function to return UTC timestamp
 # ---------------------------------------------------------------------------
 def utc_now() -> datetime:
-    """Return the current Coordinated Universal Time (UTC).
+    """현재 협정 세계시(UTC)를 반환합니다.
 
     Returns:
-        datetime: A timezone-aware `datetime` whose `tzinfo` is
-        `datetime.timezone.utc`.
+        datetime: `tzinfo`가 `datetime.timezone.utc`인 시간대 인식 `datetime`.
 
     Examples:
         >>> from mcpgateway.db import utc_now
