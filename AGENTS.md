@@ -29,6 +29,14 @@
 - 라우터
     - `routers/`: `well_known.py`, `reverse_proxy.py`, `oauth_router.py` 등 공개 엔드포인트/헬퍼
     - Admin UI: `admin.py`(라우터) + `templates/admin.html`, `static/admin.{css,js}`
+    - 관리 API(패스스루 헤더): 전역/게이트웨이 헤더 패스스루 설정 지원
+        - 전역: `GET/PUT /admin/config/passthrough-headers`
+        - 게이트웨이별: `Gateways.passthrough_headers` 필드로 제어(관리/CRUD API를 통해 설정)
+    - OAuth 라우터: 게이트웨이 OAuth 2.0 플로우 지원
+        - `GET /oauth/authorize/{gateway_id}` → 공급자 인가로 이동
+        - `GET /oauth/callback` → 콜백 처리 및 토큰 저장
+        - `GET /oauth/status/{gateway_id}` → 연결 상태 조회
+        - `POST /oauth/fetch-tools/{gateway_id}` → OAuth 후 도구 동기화
 - 전송 계층(Transports)
     - `transports/`: `sse_transport.py`, `websocket_transport.py`, `stdio_transport.py`, `streamablehttp_transport.py`
 - 서비스 계층(도메인 로직)

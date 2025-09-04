@@ -1,31 +1,11 @@
 # MCP Gateway
 
+> 한국어 요약: FastAPI 기반의 MCP 게이트웨이/프록시로, REST와 MCP, A2A 에이전트를 단일 엔드포인트로 통합합니다. 툴/리소스/프롬프트 카탈로그, 가상 서버, 연합(Federation), 재시도/레이트리밋, 관측성(OpenTelemetry), 선택적 Admin UI, 그리고 다중 전송(SSE/stdio/Streamable HTTP/HTTP)을 지원합니다. OAuth 및 헤더 패스스루(전역/게이트웨이별) 설정이 가능하며, A2A(Agent-to-Agent) 표준을 통해 외부 에이전트와 상호작용할 수 있습니다.
+
 > Model Context Protocol gateway & proxy - unify REST, MCP, and A2A with federation, virtual servers, retries, security, and an optional admin UI.
-
-![](docs/docs/images/contextforge-banner.png)
-
-<!-- === CI / Security / Build Badges === -->
-[![Build Python Package](https://github.com/IBM/mcp-context-forge/actions/workflows/python-package.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/python-package.yml)&nbsp;
-[![CodeQL](https://github.com/IBM/mcp-context-forge/actions/workflows/codeql.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/codeql.yml)&nbsp;
-[![Bandit Security](https://github.com/IBM/mcp-context-forge/actions/workflows/bandit.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/bandit.yml)&nbsp;
-[![Dependency Review](https://github.com/IBM/mcp-context-forge/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/dependency-review.yml)&nbsp;
-[![Tests & Coverage](https://github.com/IBM/mcp-context-forge/actions/workflows/pytest.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/pytest.yml)&nbsp;
-[![Lint & Static Analysis](https://github.com/IBM/mcp-context-forge/actions/workflows/lint.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/lint.yml)
-
-<!-- === Container Build & Deploy === -->
-[![Secure Docker Build](https://github.com/IBM/mcp-context-forge/actions/workflows/docker-image.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/docker-image.yml)&nbsp;
-[![Deploy to IBM Code Engine](https://github.com/IBM/mcp-context-forge/actions/workflows/ibm-cloud-code-engine.yml/badge.svg)](https://github.com/IBM/mcp-context-forge/actions/workflows/ibm-cloud-code-engine.yml)
-
-<!-- === Package / Container === -->
-[![Async](https://img.shields.io/badge/async-await-green.svg)](https://docs.python.org/3/library/asyncio.html)
-[![License](https://img.shields.io/github/license/ibm/mcp-context-forge)](LICENSE)&nbsp;
-[![PyPI](https://img.shields.io/pypi/v/mcp-contextforge-gateway)](https://pypi.org/project/mcp-contextforge-gateway/)&nbsp;
-[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fibm%2Fmcp--context--forge-blue)](https://github.com/ibm/mcp-context-forge/pkgs/container/mcp-context-forge)&nbsp;
-
 
 ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that federates MCP and REST services - unifying discovery, auth, rate-limiting, observability, virtual servers, multi-transport protocols, and an optional Admin UI into one clean endpoint for your AI clients. It runs as a fully compliant MCP server, deployable via PyPI or Docker, and scales to multi-cluster environments on Kubernetes with Redis-backed federation and caching.
 
-![MCP Gateway](https://ibm.github.io/mcp-context-forge/images/mcpgateway.gif)
 ---
 
 <!-- vscode-markdown-toc -->
@@ -112,24 +92,26 @@ ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that 
     /vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
+## 🚀 개요 & 목표
 
+**ContextForge MCP Gateway**는 [Model Context Protocol](https://modelcontextprotocol.io) (MCP) 서버와 REST API 앞단에 위치하여, AI 클라이언트를 위한 단일 통합 엔드포인트를 제공하는 게이트웨이/레지스트리/프록시입니다.
 
-## 🚀 Overview & Goals
+**⚠️ 주의**: 현재 릴리스(0.6.0)는 알파/얼리 베타 수준입니다. 프로덕션 용도로 사용하지 말고, 로컬 개발/테스트/실험 목적에 한해 사용하세요. 기능과 API, 동작은 예고 없이 변경될 수 있습니다. 프로덕션 배포 전에는 보안 검토와 추가 방어 체계를 반드시 갖추십시오. 대규모/멀티테넌트 운영에 필요한 항목 중 일부는 계속 [로드맵](https://ibm.github.io/mcp-context-forge/architecture/roadmap/)에 따라 발전 중입니다.
 
-**ContextForge MCP Gateway** is a gateway, registry, and proxy that sits in front of any [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server or REST API-exposing a unified endpoint for all your AI clients.
+지원 기능:
 
-**⚠️ Caution**: The current release (0.6.0) is considered alpha / early beta. It is not production-ready and should only be used for local development, testing, or experimentation. Features, APIs, and behaviors are subject to change without notice. **Do not** deploy in production environments without thorough security review, validation and additional security mechanisms.  Many of the features required for secure, large-scale, or multi-tenant production deployments are still on the [project roadmap](https://ibm.github.io/mcp-context-forge/architecture/roadmap/) - which is itself evolving.
-
-It currently supports:
-
-* Federation across multiple MCP and REST services
-* **A2A (Agent-to-Agent) integration** for external AI agents (OpenAI, Anthropic, custom)
-* Virtualization of legacy APIs as MCP-compliant tools and servers
-* Transport over HTTP, JSON-RPC, WebSocket, SSE (with configurable keepalive), stdio and streamable-HTTP
-* An Admin UI for real-time management, configuration, and log monitoring
-* Built-in auth, retries, and rate-limiting
-* **OpenTelemetry observability** with Phoenix, Jaeger, Zipkin, and other OTLP backends
-* Scalable deployments via Docker or PyPI, Redis-backed caching, and multi-cluster federation
+* 다중 MCP/REST 서비스 연합(Federation)
+* **A2A(Agent-to-Agent) 통합**: 외부 AI 에이전트(OpenAI, Anthropic, 커스텀) 연동
+* 레거시 API의 MCP 가상화(툴/서버로 노출)
+* 전송: HTTP/JSON-RPC/SSE(Keepalive)/stdio/Streamable HTTP
+* 실시간 관리 UI(Admin), 구성/로그 모니터링
+* 인증/재시도/레이트 리미팅 내장
+* **OpenTelemetry 관측성**: Phoenix/Jaeger/Zipkin 등 OTLP 백엔드 연동
+* 배포: Docker/PyPI, Redis 기반 캐시 및 멀티 클러스터 연합
+* 헤더 패스스루(전역/게이트웨이별) 및 게이트웨이 OAuth 2.0
+* Streamable HTTP 경로 리라이트(`/servers/<id>/mcp` → `/mcp`), 상태 비저장/상태 저장 세션
+* JSONPath(`apijsonpath`) 기반 결과 가공(툴/리소스 목록/조회)
+* 툴/리소스/프롬프트/서버 및 A2A 에이전트 메트릭(리셋 엔드포인트 포함)
 
 ![MCP Gateway Architecture](https://ibm.github.io/mcp-context-forge/images/mcpgateway.svg)
 
@@ -140,74 +122,74 @@ For a list of upcoming features, check out the [ContextForge MCP Gateway Roadmap
 ---
 
 <details>
-<summary><strong>🔌 Gateway Layer with Protocol Flexibility</strong></summary>
+<summary><strong>🔌 프로토콜 유연성을 갖춘 게이트웨이 레이어</strong></summary>
 
-* Sits in front of any MCP server or REST API
-* Lets you choose your MCP protocol version (e.g., `2025-03-26`)
-* Exposes a single, unified interface for diverse backends
-
-</details>
-
-<details>
-<summary><strong>🌐 Federation of Peer Gateways (MCP Registry)</strong></summary>
-
-* Auto-discovers or configures peer gateways (via mDNS or manual)
-* Performs health checks and merges remote registries transparently
-* Supports Redis-backed syncing and fail-over
+* MCP 서버 또는 REST API 앞단에 배치
+* MCP 프로토콜 버전 선택 가능(예: `2025-03-26`)
+* 다양한 백엔드를 단일 인터페이스로 통합 노출
 
 </details>
 
 <details>
-<summary><strong>🧩 Virtualization of REST/gRPC Services</strong></summary>
+<summary><strong>🌐 피어 게이트웨이 연합(MCP 레지스트리)</strong></summary>
 
-* Wraps non-MCP services as virtual MCP servers
-* Registers tools, prompts, and resources with minimal configuration
-
-</details>
-
-<details>
-<summary><strong>🔁 REST-to-MCP Tool Adapter</strong></summary>
-
-* Adapts REST APIs into tools with:
-
-  * Automatic JSON Schema extraction
-  * Support for headers, tokens, and custom auth
-  * Retry, timeout, and rate-limit policies
+* 피어 게이트웨이 자동 검색(mDNS) 또는 수동 등록
+* 헬스 체크 및 원격 레지스트리 병합
+* Redis 기반 동기화와 장애 조치 지원
 
 </details>
 
 <details>
-<summary><strong>🧠 Unified Registries</strong></summary>
+<summary><strong>🧩 REST/gRPC 서비스의 가상화</strong></summary>
 
-* **Prompts**: Jinja2 templates, multimodal support, rollback/versioning
-* **Resources**: URI-based access, MIME detection, caching, SSE updates
-* **Tools**: Native or adapted, with input validation and concurrency controls
-
-</details>
-
-<details>
-<summary><strong>📈 Admin UI, Observability & Dev Experience</strong></summary>
-
-* Admin UI built with HTMX + Alpine.js
-* Real-time log viewer with filtering, search, and export capabilities
-* Auth: Basic, JWT, or custom schemes
-* Structured logs, health endpoints, metrics
-* 400+ tests, Makefile targets, live reload, pre-commit hooks
+* 비-MCP 서비스를 가상 MCP 서버로 래핑
+* 최소 구성으로 툴/프롬프트/리소스 등록
 
 </details>
 
 <details>
-<summary><strong>🔍 OpenTelemetry Observability</strong></summary>
+<summary><strong>🔁 REST→MCP 툴 어댑터</strong></summary>
 
-* **Vendor-agnostic tracing** with OpenTelemetry (OTLP) protocol support
-* **Multiple backend support**: Phoenix (LLM-focused), Jaeger, Zipkin, Tempo, DataDog, New Relic
-* **Distributed tracing** across federated gateways and services
-* **Automatic instrumentation** of tools, prompts, resources, and gateway operations
-* **LLM-specific metrics**: Token usage, costs, model performance
-* **Zero-overhead when disabled** with graceful degradation
-* **Easy configuration** via environment variables
+* REST API를 MCP 툴로 변환:
+
+    * JSON 스키마 자동 추출
+    * 헤더/토큰/커스텀 인증 지원
+    * 재시도/타임아웃/레이트 리미트 정책
+
+</details>
+
+<details>
+<summary><strong>🧠 통합 레지스트리</strong></summary>
+
+* **Prompts**: Jinja2 템플릿, 멀티모달, 롤백/버저닝
+* **Resources**: URI 기반 접근, MIME 판별, 캐싱, SSE 업데이트
+* **Tools**: 네이티브/어댑티드, 입력 검증/동시성 제어
+
+</details>
+
+<details>
+<summary><strong>📈 Admin UI, 관측성 & 개발 경험</strong></summary>
+
+* HTMX + Alpine.js 기반 Admin UI
+* 필터/검색/내보내기 가능한 실시간 로그 뷰어
+* 인증: Basic/JWT/커스텀
+* 구조화 로그, 헬스 엔드포인트, 메트릭
+* 400+ 테스트, Makefile 타깃, 라이브 리로드, 프리커밋 훅
+
+</details>
+
+<details>
+<summary><strong>🔍 OpenTelemetry 관측성</strong></summary>
+
+* **벤더 중립 트레이싱**(OTLP 지원)
+* **여러 백엔드**: Phoenix/Jaeger/Zipkin/Tempo/DataDog/New Relic
+* **분산 트레이싱**: 연합 게이트웨이·서비스 간 연계
+* **자동 계측**: 툴/프롬프트/리소스/게이트웨이 동작
+* **LLM 메트릭**: 토큰/비용/모델 성능
+* **비활성 시 오버헤드 제로**, 환경변수 기반 쉬운 설정
 
 Quick start with Phoenix (LLM observability):
+
 ```bash
 # Start Phoenix
 docker run -p 6006:6006 -p 4317:4317 arizephoenix/phoenix:latest
@@ -227,14 +209,13 @@ See [Observability Documentation](https://ibm.github.io/mcp-context-forge/manage
 
 ---
 
-## Quick Start - PyPI
+## 빠른 시작 - PyPI
 
-MCP Gateway is published on [PyPI](https://pypi.org/project/mcp-contextforge-gateway/) as `mcp-contextforge-gateway`.
+MCP Gateway는 [PyPI](https://pypi.org/project/mcp-contextforge-gateway/)에 `mcp-contextforge-gateway` 패키지로 배포됩니다.
 
 ---
 
-**TLDR;**:
-(single command using [uv](https://docs.astral.sh/uv/))
+**요약 실행** ([uv](https://docs.astral.sh/uv/) 사용):
 
 ```bash
 BASIC_AUTH_PASSWORD=pass \
@@ -244,31 +225,31 @@ uvx --from mcp-contextforge-gateway mcpgateway --host 0.0.0.0 --port 4444
 ```
 
 <details>
-<summary><strong>📋 Prerequisites</strong></summary>
+<summary><strong>📋 사전 준비물</strong></summary>
 
-* **Python ≥ 3.10** (3.11 recommended)
-* **curl + jq** - only for the last smoke-test step
+* **Python ≥ 3.10** (3.11 권장)
+* **curl + jq** - 마지막 스모크 테스트 단계에서 사용
 
 </details>
 
-### 1 - Install & run (copy-paste friendly)
+### 1 - 설치 & 실행(복붙용)
 
 ```bash
-# 1️⃣  Isolated env + install from pypi
+# 1️⃣  격리 환경 + PyPI 설치
 mkdir mcpgateway && cd mcpgateway
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 pip install mcp-contextforge-gateway
 
-# 2️⃣  Launch on all interfaces with custom creds & secret key
-# Enable the Admin API endpoints (true/false) - disabled by default
+# 2️⃣  커스텀 자격/시크릿 키로 전체 인터페이스 바인딩
+# Admin API 엔드포인트 활성화(기본 비활성)
 export MCPGATEWAY_UI_ENABLED=true
 export MCPGATEWAY_ADMIN_API_ENABLED=true
 
 BASIC_AUTH_PASSWORD=pass JWT_SECRET_KEY=my-test-key \
   mcpgateway --host 0.0.0.0 --port 4444 &   # admin/pass
 
-# 3️⃣  Generate a bearer token & smoke-test the API
+# 3️⃣  Bearer 토큰 생성 & API 스모크 테스트
 export MCPGATEWAY_BEARER_TOKEN=$(python3 -m mcpgateway.utils.create_jwt_token \
     --username admin --exp 10080 --secret my-test-key)
 
@@ -277,28 +258,28 @@ curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
 ```
 
 <details>
-<summary><strong>Windows (PowerShell) quick-start</strong></summary>
+<summary><strong>Windows (PowerShell) 빠른 시작</strong></summary>
 
 ```powershell
-# 1️⃣  Isolated env + install from PyPI
+# 1️⃣  격리 환경 + PyPI 설치
 mkdir mcpgateway ; cd mcpgateway
 python3 -m venv .venv ; .\.venv\Scripts\Activate.ps1
 pip install --upgrade pip
 pip install mcp-contextforge-gateway
 
-# 2️⃣  Environment variables (session-only)
+# 2️⃣  환경변수 설정(세션 한정)
 $Env:MCPGATEWAY_UI_ENABLED        = "true"
 $Env:MCPGATEWAY_ADMIN_API_ENABLED = "true"
 $Env:BASIC_AUTH_PASSWORD          = "changeme"      # admin/changeme
 $Env:JWT_SECRET_KEY               = "my-test-key"
 
-# 3️⃣  Launch the gateway
+# 3️⃣  게이트웨이 실행
 mcpgateway.exe --host 0.0.0.0 --port 4444
 
-#   Optional: background it
+#   선택: 백그라운드 실행
 # Start-Process -FilePath "mcpgateway.exe" -ArgumentList "--host 0.0.0.0 --port 4444"
 
-# 4️⃣  Bearer token and smoke-test
+# 4️⃣  Bearer 토큰 및 스모크 테스트
 $Env:MCPGATEWAY_BEARER_TOKEN = python3 -m mcpgateway.utils.create_jwt_token `
     --username admin --exp 10080 --secret my-test-key
 
@@ -309,63 +290,63 @@ curl -s -H "Authorization: Bearer $Env:MCPGATEWAY_BEARER_TOKEN" `
 </details>
 
 <details>
-<summary><strong>More configuration</strong></summary>
+<summary><strong>추가 구성</strong></summary>
 
-Copy [.env.example](.env.example) to `.env` and tweak any of the settings (or use them as env variables).
+[.env.example](.env.example)을 `.env`로 복사한 뒤 값을 조정하거나, 환경변수로 설정하세요.
 
 </details>
 
 <details>
-<summary><strong>🚀 End-to-end demo (register a local MCP server)</strong></summary>
+<summary><strong>🚀 E2E 데모(로컬 MCP 서버 등록)</strong></summary>
 
 ```bash
-# 1️⃣  Spin up the sample GO MCP time server using mcpgateway.translate & docker
+# 1️⃣  샘플 Go MCP 타임 서버 실행(translate + docker)
 python3 -m mcpgateway.translate \
      --stdio "docker run --rm -i -p 8888:8080 ghcr.io/ibm/fast-time-server:latest -transport=stdio" \
      --expose-sse \
      --port 8003
 
-# Or using the official mcp-server-git using uvx:
+# 또는 공식 mcp-server-git(uvx) 사용:
 pip install uv # to install uvx, if not already installed
 python3 -m mcpgateway.translate --stdio "uvx mcp-server-git" --expose-sse --port 9000
 
-# Alternative: running the local binary
+# 로컬 바이너리 직접 실행(대안)
 # cd mcp-servers/go/fast-time-server; make build
 # python3 -m mcpgateway.translate --stdio "./dist/fast-time-server -transport=stdio" --expose-sse --port 8002
 
-# NEW: Expose via multiple protocols simultaneously!
+# NEW: 여러 프로토콜 동시 노출
 python3 -m mcpgateway.translate \
      --stdio "uvx mcp-server-git" \
      --expose-sse \
      --expose-streamable-http \
      --port 9000
-# Now accessible via both /sse (SSE) and /mcp (streamable HTTP) endpoints
+# 이제 /sse(SSE)와 /mcp(Streamable HTTP)로 모두 접근 가능
 
-# 2️⃣  Register it with the gateway
+# 2️⃣  게이트웨이에 등록
 curl -s -X POST -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"name":"fast_time","url":"http://localhost:9000/sse"}' \
      http://localhost:4444/gateways
 
-# 3️⃣  Verify tool catalog
+# 3️⃣  툴 카탈로그 확인
 curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localhost:4444/tools | jq
 
-# 4️⃣  Create a *virtual server* bundling those tools. Use the ID of tools from the tool catalog (Step #3) and pass them in the associatedTools list.
+# 4️⃣  위 툴들을 묶은 *가상 서버* 생성(3단계에서 확인한 툴 ID 사용)
 curl -s -X POST -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"name":"time_server","description":"Fast time tools","associatedTools":[<ID_OF_TOOLS>]}' \
      http://localhost:4444/servers | jq
 
-# Example curl
+# 예시 curl
 curl -s -X POST -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN"
      -H "Content-Type: application/json"
      -d '{"name":"time_server","description":"Fast time tools","associatedTools":["6018ca46d32a4ac6b4c054c13a1726a2"]}' \
      http://localhost:4444/servers | jq
 
-# 5️⃣  List servers (should now include the UUID of the newly created virtual server)
+# 5️⃣  서버 목록(신규 가상 서버의 UUID 포함)
 curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localhost:4444/servers | jq
 
-# 6️⃣  Client SSE endpoint. Inspect it interactively with the MCP Inspector CLI (or use any MCP client)
+# 6️⃣  클라이언트 SSE 엔드포인트(MCP Inspector CLI 또는 임의의 MCP 클라이언트)
 npx -y @modelcontextprotocol/inspector
 # Transport Type: SSE, URL: http://localhost:4444/servers/UUID_OF_SERVER_1/sse,  Header Name: "Authorization", Bearer Token
 ```
@@ -373,7 +354,7 @@ npx -y @modelcontextprotocol/inspector
 </details>
 
 <details>
-<summary><strong>🖧 Using the stdio wrapper (mcpgateway-wrapper)</strong></summary>
+<summary><strong>🖧 stdio 래퍼 사용(mcpgateway-wrapper)</strong></summary>
 
 ```bash
 export MCP_AUTH=$MCPGATEWAY_BEARER_TOKEN
@@ -381,9 +362,9 @@ export MCP_SERVER_URL=http://localhost:4444/servers/UUID_OF_SERVER_1/mcp
 python3 -m mcpgateway.wrapper  # Ctrl-C to exit
 ```
 
-You can also run it with `uv` or inside Docker/Podman - see the *Containers* section above.
+`uv` 또는 Docker/Podman 내에서도 실행할 수 있습니다(상단 컨테이너 섹션 참고).
 
-In MCP Inspector, define `MCP_AUTH` and `MCP_SERVER_URL` env variables, and select `python3` as the Command, and `-m mcpgateway.wrapper` as Arguments.
+MCP Inspector에서 `MCP_AUTH`, `MCP_SERVER_URL` 환경변수를 설정하고, Command는 `python3`, Arguments는 `-m mcpgateway.wrapper`로 지정하세요.
 
 ```bash
 echo $PWD/.venv/bin/python3 # Using the Python3 full path ensures you have a working venv
@@ -392,15 +373,15 @@ export MCP_AUTH=${MCPGATEWAY_BEARER_TOKEN}
 npx -y @modelcontextprotocol/inspector
 ```
 
-or
+또는
 
-Pass the url and auth as arguments (no need to set environment variables)
+환경변수 대신 인자로 URL과 인증값을 넘길 수도 있습니다.
+
 ```bash
 npx -y @modelcontextprotocol/inspector
 command as `python`
 Arguments as `-m mcpgateway.wrapper --url "http://localhost:4444/servers/UUID_OF_SERVER_1/mcp" --auth "Bearer <your token>"`
 ```
-
 
 When using a MCP Client such as Claude with stdio:
 
@@ -424,15 +405,15 @@ When using a MCP Client such as Claude with stdio:
 
 ---
 
-## Quick Start - Containers
+## 빠른 시작 - 컨테이너
 
-Use the official OCI image from GHCR with **Docker** *or* **Podman**.
+GHCR의 공식 OCI 이미지를 **Docker** 또는 **Podman**으로 실행하세요.
 
 ---
 
 ### 🐳 Docker
 
-#### 1 - Minimum viable run
+#### 1 - 최소 실행 예시
 
 ```bash
 docker run -d --name mcpgateway \
@@ -447,17 +428,17 @@ docker run -d --name mcpgateway \
   -e DATABASE_URL=sqlite:///./mcp.db \
   ghcr.io/ibm/mcp-context-forge:0.6.0
 
-# Tail logs (Ctrl+C to quit)
+# 로그 보기(Ctrl+C 종료)
 docker logs -f mcpgateway
 
-# Generating an API key
+# API 키 생성
 docker run --rm -it ghcr.io/ibm/mcp-context-forge:0.6.0 \
   python3 -m mcpgateway.utils.create_jwt_token --username admin --exp 0 --secret my-test-key
 ```
 
-Browse to **[http://localhost:4444/admin](http://localhost:4444/admin)** (user `admin` / pass `changeme`).
+**[http://localhost:4444/admin](http://localhost:4444/admin)**로 접속(user `admin` / pass `changeme`).
 
-#### 2 - Persist the SQLite database
+#### 2 - SQLite 데이터베이스 영속화
 
 ```bash
 mkdir -p $(pwd)/data
@@ -482,9 +463,9 @@ docker run -d --name mcpgateway \
   ghcr.io/ibm/mcp-context-forge:0.6.0
 ```
 
-SQLite now lives on the host at `./data/mcp.db`.
+호스트의 `./data/mcp.db`에 SQLite 파일이 저장됩니다.
 
-#### 3 - Local tool discovery (host network)
+#### 3 - 로컬 툴 디스커버리(host 네트워크)
 
 ```bash
 mkdir -p $(pwd)/data
@@ -506,13 +487,13 @@ docker run -d --name mcpgateway \
   ghcr.io/ibm/mcp-context-forge:0.6.0
 ```
 
-Using `--network=host` allows Docker to access the local network, allowing you to add MCP servers running on your host. See [Docker Host network driver documentation](https://docs.docker.com/engine/network/drivers/host/) for more details.
+`--network=host` 옵션은 컨테이너가 로컬 네트워크로 직접 접근하도록 하여, 호스트에서 실행 중인 MCP 서버를 등록할 수 있게 합니다. 자세한 내용은 [Docker Host network driver 문서](https://docs.docker.com/engine/network/drivers/host/)를 참고하세요.
 
 ---
 
-### 🦭 Podman (rootless-friendly)
+### 🦭 Podman (루트리스 친화)
 
-#### 1 - Basic run
+#### 1 - 기본 실행
 
 ```bash
 podman run -d --name mcpgateway \
@@ -522,7 +503,7 @@ podman run -d --name mcpgateway \
   ghcr.io/ibm/mcp-context-forge:0.6.0
 ```
 
-#### 2 - Persist SQLite
+#### 2 - SQLite 영속화
 
 ```bash
 mkdir -p $(pwd)/data
@@ -541,7 +522,7 @@ podman run -d --name mcpgateway \
   ghcr.io/ibm/mcp-context-forge:0.6.0
 ```
 
-#### 3 - Host networking (rootless)
+#### 3 - Host 네트워킹(루트리스)
 
 ```bash
 mkdir -p $(pwd)/data
@@ -571,6 +552,7 @@ podman run -d --name mcpgateway \
   ```bash
   docker exec mcpgateway python3 -m mcpgateway.utils.create_jwt_token -u admin -e 10080 --secret my-test-key
   ```
+
 * **Upgrades** - Stop, remove, and rerun with the same `-v $(pwd)/data:/data` mount; your DB and config stay intact.
 
 </details>
@@ -590,6 +572,311 @@ curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
 ```
 
 </details>
+
+---
+
+## 실전 가이드 - Docker로 MCP Gateway 운영하기
+
+> 목적: 실제 환경에서 Docker로 게이트웨이를 띄우고, 여러 MCP 서버(stdio/SSE/Streamable HTTP, 다른 게이트웨이)를 등록해 툴 카탈로그로 묶은 뒤, MCP 클라이언트가 연결해 사용할 수 있도록 단계별로 안내합니다.
+
+### ✅ 핵심 요점
+
+- **컨테이너 인자에 MCP 서버 목록을 직접 넘기지 않습니다.**
+- 게이트웨이를 먼저 띄운 뒤, **API로 `/gateways`에 MCP 서버를 등록**합니다.
+- stdio만 있는 MCP 서버는 `mcpgateway.translate`로 **SSE/Streamable HTTP로 노출**한 다음 등록합니다.
+
+### 0) 사전 준비
+
+- Docker(또는 Podman)
+- 포트 정책: 게이트웨이 4444, 각 MCP 서버 포트(예: 9000)
+- 컨테이너에서 호스트로 접근이 필요하면 Linux에서 `--network=host` 또는 `--add-host=host.docker.internal:host-gateway` 사용
+
+---
+
+### 1) Gateway 컨테이너 실행(기본)
+
+```bash
+docker run -d --name mcpgateway \
+  -p 4444:4444 \
+  -e MCPGATEWAY_UI_ENABLED=true \
+  -e MCPGATEWAY_ADMIN_API_ENABLED=true \
+  -e HOST=0.0.0.0 \
+  -e JWT_SECRET_KEY=my-test-key \
+  -e BASIC_AUTH_USER=admin \
+  -e BASIC_AUTH_PASSWORD=changeme \
+  -e AUTH_REQUIRED=true \
+  -e DATABASE_URL=sqlite:///./mcp.db \
+  ghcr.io/ibm/mcp-context-forge:0.6.0
+```
+
+- Web UI: `http://localhost:4444/admin` (기본 `admin/changeme`)
+- Swagger: `http://localhost:4444/docs`
+
+영속화(권장):
+
+```bash
+mkdir -p $(pwd)/data && touch $(pwd)/data/mcp.db && chmod 777 $(pwd)/data
+docker run -d --name mcpgateway \
+  --restart unless-stopped \
+  -p 4444:4444 \
+  -v $(pwd)/data:/data \
+  -e MCPGATEWAY_UI_ENABLED=true \
+  -e MCPGATEWAY_ADMIN_API_ENABLED=true \
+  -e DATABASE_URL=sqlite:////data/mcp.db \
+  -e HOST=0.0.0.0 \
+  -e JWT_SECRET_KEY=my-test-key \
+  -e BASIC_AUTH_USER=admin \
+  -e BASIC_AUTH_PASSWORD=changeme \
+  ghcr.io/ibm/mcp-context-forge:0.6.0
+```
+
+로컬 MCP 서버에 직접 접근이 필요하면(host 네트워크):
+
+```bash
+docker run -d --name mcpgateway \
+  --network=host \
+  -e MCPGATEWAY_UI_ENABLED=true \
+  -e MCPGATEWAY_ADMIN_API_ENABLED=true \
+  -e HOST=0.0.0.0 \
+  -e PORT=4444 \
+  -e DATABASE_URL=sqlite:////data/mcp.db \
+  -v $(pwd)/data:/data \
+  ghcr.io/ibm/mcp-context-forge:0.6.0
+```
+
+Docker Compose 예시:
+
+```yaml
+version: "3.9"
+services:
+  gateway:
+    image: ghcr.io/ibm/mcp-context-forge:0.6.0
+    container_name: mcpgateway
+    ports:
+      - "4444:4444"
+    environment:
+      MCPGATEWAY_UI_ENABLED: "true"
+      MCPGATEWAY_ADMIN_API_ENABLED: "true"
+      HOST: "0.0.0.0"
+      JWT_SECRET_KEY: "my-test-key"
+      BASIC_AUTH_USER: "admin"
+      BASIC_AUTH_PASSWORD: "changeme"
+      AUTH_REQUIRED: "true"
+      DATABASE_URL: "sqlite:////data/mcp.db"
+    volumes:
+      - ./data:/data
+    # Linux에서 호스트 접근이 필요하면 아래 중 하나 사용
+    # network_mode: host
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+```
+
+---
+
+### 2) API 토큰 발급(JWT)
+
+컨테이너 내부에서 발급:
+
+```bash
+docker exec mcpgateway python3 -m mcpgateway.utils.create_jwt_token \
+  --username admin --exp 10080 --secret my-test-key
+```
+
+출력 값을 환경변수로 보관:
+
+```bash
+export MCPGATEWAY_BEARER_TOKEN="<위에서 출력된 토큰>"
+```
+
+헬스/버전 확인:
+
+```bash
+curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localhost:4444/health
+curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localhost:4444/version | jq
+```
+
+---
+
+### 3) stdio MCP 서버를 HTTP로 노출(translate)
+
+stdio만 있는 MCP 서버를 **SSE**(필요 시 Streamable HTTP 포함)로 노출합니다.
+
+```bash
+# mcp-server-git 예시(uvx 필요)
+python3 -m mcpgateway.translate \
+  --stdio "uvx mcp-server-git" \
+  --expose-sse \
+  --port 9000
+# → http://localhost:9000/sse 로 접근 가능
+```
+
+SSE와 Streamable HTTP 동시 노출:
+
+```bash
+python3 -m mcpgateway.translate \
+  --stdio "uvx mcp-server-git" \
+  --expose-sse \
+  --expose-streamable-http \
+  --port 9000
+# → /sse, /mcp 둘 다 제공
+```
+
+컨테이너에서 접근 시:
+
+- host 네트워크로 띄웠다면 그대로 `http://localhost:9000` 사용
+- 그렇지 않다면 macOS/Windows: `http://host.docker.internal:9000`, Linux: `--add-host=host.docker.internal:host-gateway` 후 동일 URL 사용
+
+---
+
+### 4) MCP 서버 등록(`/gateways`)
+
+게이트웨이에 등록하면 해당 서버의 툴/리소스/프롬프트가 통합 카탈로그로 병합됩니다.
+
+```bash
+# SSE 엔드포인트 등록
+curl -s -X POST \
+  -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"fast_time","url":"http://localhost:9000/sse"}' \
+  http://localhost:4444/gateways
+
+# 두 번째 MCP 서버(예: 9100/sse) 등록
+curl -s -X POST \
+  -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"tools_2","url":"http://localhost:9100/sse"}' \
+  http://localhost:4444/gateways
+
+# 다른 게이트웨이(피어 레지스트리) 등록
+curl -s -X POST \
+  -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"peer_registry","url":"http://peer-gateway:4444"}' \
+  http://localhost:4444/gateways
+```
+
+등록 후 툴 확인:
+
+```bash
+curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  http://localhost:4444/tools | jq
+```
+
+---
+
+### 5) 가상 서버 생성(툴 묶음 → 하나의 MCP 서버처럼)
+
+등록된 툴 ID를 확인한 뒤, 원하는 툴들을 하나의 "가상 서버"로 묶습니다.
+
+```bash
+curl -s -X POST \
+  -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name":"time_server",
+        "description":"Fast time tools",
+        "associatedTools":["<TOOL_ID_1>", "<TOOL_ID_2>"]
+      }' \
+  http://localhost:4444/servers | jq
+```
+
+서버 목록과 UUID 확인:
+
+```bash
+curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" \
+  http://localhost:4444/servers | jq
+```
+
+---
+
+### 6) MCP 클라이언트 연결
+
+- SSE: `http://localhost:4444/servers/<SERVER_UUID>/sse`
+  - 헤더: `Authorization: Bearer <토큰>`
+- Streamable HTTP: `http://localhost:4444/servers/<SERVER_UUID>/mcp`
+
+MCP Inspector 예시:
+
+```bash
+npx -y @modelcontextprotocol/inspector
+# Transport Type: SSE
+# URL: http://localhost:4444/servers/<SERVER_UUID>/sse
+# Header Name: Authorization
+# Header Value: Bearer <MCPGATEWAY_BEARER_TOKEN>
+```
+
+stdio 전용 클라이언트를 위한 래퍼(`mcpgateway.wrapper`):
+
+```bash
+docker run --rm -i \
+  -e MCP_AUTH=$MCPGATEWAY_BEARER_TOKEN \
+  -e MCP_SERVER_URL=http://host.docker.internal:4444/servers/<SERVER_UUID>/mcp \
+  ghcr.io/ibm/mcp-context-forge:0.6.0 \
+  python3 -m mcpgateway.wrapper
+```
+
+---
+
+### 7) 보안/운영 팁
+
+- 프로덕션: `MCPGATEWAY_UI_ENABLED=false`, `MCPGATEWAY_ADMIN_API_ENABLED=false` 고려(관리면 분리)
+- `JWT_SECRET_KEY`는 강력한 랜덤 값 사용, CORS `ALLOWED_ORIGINS` 명시
+- 보안 헤더 유지(`SECURITY_HEADERS_ENABLED=true`), 필요 시 `X_FRAME_OPTIONS`/CSP 조정
+- 관측성 필요 시 OTEL 환경변수 설정, 컨테이너 재시작: `--restart unless-stopped`
+- 데이터는 볼륨(`-v $(pwd)/data:/data`)로 영속화
+
+---
+
+### 8) 트러블슈팅
+
+- 401 Unauthorized: 토큰 생성 시 사용한 `JWT_SECRET_KEY`와 컨테이너 설정이 일치하는지 확인
+- 로컬 MCP 서버 미검출: `--network=host` 또는 `host.docker.internal` 접근 경로 사용
+- SSE keepalive 경고: 무시 가능, 필요 시 `SSE_KEEPALIVE_ENABLED=false`
+- 포트 충돌: `docker ps` / `lsof -i :4444` 확인
+
+---
+
+### 9) 한 번에 따라 하기(최소 세트)
+
+```bash
+# 1) Gateway 실행
+docker run -d --name mcpgateway -p 4444:4444 \
+  -e MCPGATEWAY_UI_ENABLED=true \
+  -e MCPGATEWAY_ADMIN_API_ENABLED=true \
+  -e HOST=0.0.0.0 \
+  -e JWT_SECRET_KEY=my-test-key \
+  -e BASIC_AUTH_USER=admin \
+  -e BASIC_AUTH_PASSWORD=changeme \
+  -e AUTH_REQUIRED=true \
+  -e DATABASE_URL=sqlite:///./mcp.db \
+  ghcr.io/ibm/mcp-context-forge:0.6.0
+
+# 2) 토큰 발급
+export MCPGATEWAY_BEARER_TOKEN=$(docker exec mcpgateway python3 -m mcpgateway.utils.create_jwt_token -u admin --exp 10080 --secret my-test-key)
+
+# 3) stdio MCP 서버를 9000/sse로 노출(호스트에서)
+python3 -m mcpgateway.translate --stdio "uvx mcp-server-git" --expose-sse --port 9000
+
+# 4) 서버 등록
+curl -s -X POST -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"fast_time","url":"http://localhost:9000/sse"}' \
+  http://localhost:4444/gateways
+
+# 5) 툴 확인 → 툴 ID 추출
+curl -s -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localhost:4444/tools | jq
+
+# 6) 가상 서버 생성(툴 ID 넣어주세요)
+curl -s -X POST -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"time_server","description":"Fast time tools","associatedTools":["<TOOL_ID>"]}' \
+  http://localhost:4444/servers | jq
+
+# 7) 클라이언트 연결 (SSE)
+# URL: http://localhost:4444/servers/<SERVER_UUID>/sse
+# Header: Authorization: Bearer <MCPGATEWAY_BEARER_TOKEN>
+```
+
+> 여러 MCP 서버를 붙이려면 4번 `POST /gateways`를 서버 수만큼 반복하면 됩니다. 피어 게이트웨이도 같은 방식으로 `url`에 피어의 루트(`http://peer:4444` 등)를 넣어 등록하세요.
 
 ---
 
@@ -619,36 +906,36 @@ docker run --rm -i \
 
 ---
 
-## Testing `mcpgateway.wrapper` by hand:
+## `mcpgateway.wrapper` 수동 테스트
 
-Because the wrapper speaks JSON-RPC over stdin/stdout, you can interact with it using nothing more than a terminal or pipes.
+Wrapper는 stdin/stdout으로 JSON-RPC를 주고받으므로, 터미널 파이프만으로도 상호작용할 수 있습니다.
 
 ```bash
-# Start the MCP Gateway Wrapper
+# MCP Gateway Wrapper 시작
 export MCP_AUTH=${MCPGATEWAY_BEARER_TOKEN}
 export MCP_SERVER_URL=http://localhost:4444/servers/YOUR_SERVER_UUID
 python3 -m mcpgateway.wrapper
 ```
 
 <details>
-<summary><strong>Initialize the protocol</strong></summary>
+<summary><strong>프로토콜 초기화</strong></summary>
 
 ```json
-# Initialize the protocol
+# 프로토콜 초기화 요청
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"demo","version":"0.0.1"}}}
 
-# Then after the reply:
+# 응답 이후 알림 예시
 {"jsonrpc":"2.0","method":"notifications/initialized","params":{}}
 
-# Get prompts
+# 프롬프트 가져오기
 {"jsonrpc":"2.0","id":4,"method":"prompts/list"}
 {"jsonrpc":"2.0","id":5,"method":"prompts/get","params":{"name":"greeting","arguments":{"user":"Bob"}}}
 
-# Get resources
+# 리소스 가져오기
 {"jsonrpc":"2.0","id":6,"method":"resources/list"}
 {"jsonrpc":"2.0","id":7,"method":"resources/read","params":{"uri":"https://example.com/some.txt"}}
 
-# Get / call tools
+# 툴 목록/호출
 {"jsonrpc":"2.0","id":2,"method":"tools/list"}
 {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_system_time","arguments":{"timezone":"Europe/Dublin"}}}
 ```
@@ -656,7 +943,7 @@ python3 -m mcpgateway.wrapper
 </details>
 
 <details>
-<summary><strong>Expected responses from mcpgateway.wrapper</strong></summary>
+<summary><strong>예상 응답 예시</strong></summary>
 
 ```json
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"mcpgateway-wrapper","version":"0.6.0"}}}
@@ -673,7 +960,7 @@ python3 -m mcpgateway.wrapper
 
 </details>
 
-### 🧩 Running from an MCP Client (`mcpgateway.wrapper`)
+### 🧩 MCP 클라이언트에서 실행(`mcpgateway.wrapper`)
 
 The `mcpgateway.wrapper` exposes everything your Gateway knows about over **stdio**, so any MCP client that *can't* (or *shouldn't*) open an authenticated SSE stream still gets full tool-calling power.
 
@@ -804,7 +1091,7 @@ Need help? See:
 
 ---
 
-## 🚀 Quick Start: VS Code Dev Container
+## 🚀 빠른 시작: VS Code Dev Container
 
 Spin up a fully-loaded dev environment (Python 3.11, Docker/Podman CLI, all project dependencies) in just two clicks.
 
@@ -821,7 +1108,7 @@ Spin up a fully-loaded dev environment (Python 3.11, Docker/Podman CLI, all proj
 <details>
 <summary><strong>🧰 Setup Instructions</strong></summary>
 
-### 1 - Clone & Open
+### 1 - 클론 & 열기
 
 ```bash
 git clone https://github.com/ibm/mcp-context-forge.git
@@ -835,7 +1122,7 @@ VS Code will detect the `.devcontainer` and prompt:
 
 ---
 
-### 2 - First-Time Build (Automatic)
+### 2 - 최초 빌드(자동)
 
 The container build will:
 
@@ -917,6 +1204,7 @@ This project supports both Docker and Podman. The Makefile automatically detects
 which runtime is available and handles image naming differences.
 
 ### Auto-detection
+
 ```bash
 make container-build  # Uses podman if available, otherwise docker
 
@@ -1039,6 +1327,7 @@ You can get started by copying the provided [.env.example](.env.example) to `.en
 >   export MCPGATEWAY_BEARER_TOKEN=$(python3 -m mcpgateway.utils.create_jwt_token --username admin --exp 0 --secret my-test-key)
 >   echo $MCPGATEWAY_BEARER_TOKEN
 >   ```
+>
 > * Tokens allow non-interactive API clients to authenticate securely.
 >
 > 🧪 Set `AUTH_REQUIRED=false` during development if you want to disable all authentication (e.g. for local testing or open APIs) or clients that don't support SSE authentication.
@@ -1075,8 +1364,9 @@ You can get started by copying the provided [.env.example](.env.example) to `.en
 > 🎛️ **Admin UI**: Dedicated tab for agent management with test functionality
 
 **A2A Configuration Effects:**
-- `MCPGATEWAY_A2A_ENABLED=false`: Completely disables A2A features (API endpoints return 404, admin tab hidden)
-- `MCPGATEWAY_A2A_METRICS_ENABLED=false`: Disables metrics collection while keeping functionality
+
+* `MCPGATEWAY_A2A_ENABLED=false`: Completely disables A2A features (API endpoints return 404, admin tab hidden)
+* `MCPGATEWAY_A2A_METRICS_ENABLED=false`: Disables metrics collection while keeping functionality
 
 ### Security
 
@@ -1111,7 +1401,6 @@ You can get started by copying the provided [.env.example](.env.example) to `.en
 > Documentation endpoints (`/docs`, `/redoc`, `/openapi.json`) are always protected by authentication.
 > By default, they require Bearer token authentication. Setting `DOCS_ALLOW_BASIC_AUTH=true` enables HTTP Basic Authentication as an additional method using the same credentials as `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD`.
 
-
 ### Logging
 
 MCP Gateway provides flexible logging with **stdout/stderr output by default** and **optional file-based logging**. When file logging is enabled, it provides JSON formatting for structured logs and text formatting for console output.
@@ -1129,11 +1418,12 @@ MCP Gateway provides flexible logging with **stdout/stderr output by default** a
 | `LOG_BACKUP_COUNT`      | Number of backup files to keep     | `5`               | Any non-negative integer   |
 
 **Logging Behavior:**
-- **Default**: Logs only to **stdout/stderr** with human-readable text format
-- **File Logging**: When `LOG_TO_FILE=true`, logs to **both** file (JSON format) and console (text format)
-- **Log Rotation**: When `LOG_ROTATION_ENABLED=true`, files rotate at `LOG_MAX_SIZE_MB` with `LOG_BACKUP_COUNT` backup files (e.g., `.log.1`, `.log.2`)
-- **Directory Creation**: Log folder is automatically created if it doesn't exist
-- **Centralized Service**: All modules use the unified `LoggingService` for consistent formatting
+
+* **Default**: Logs only to **stdout/stderr** with human-readable text format
+* **File Logging**: When `LOG_TO_FILE=true`, logs to **both** file (JSON format) and console (text format)
+* **Log Rotation**: When `LOG_ROTATION_ENABLED=true`, files rotate at `LOG_MAX_SIZE_MB` with `LOG_BACKUP_COUNT` backup files (e.g., `.log.1`, `.log.2`)
+* **Directory Creation**: Log folder is automatically created if it doesn't exist
+* **Centralized Service**: All modules use the unified `LoggingService` for consistent formatting
 
 **Example Configurations:**
 
@@ -1158,9 +1448,10 @@ LOG_FILE=gateway.log
 ```
 
 **Default Behavior:**
-- Logs are written **only to stdout/stderr** in human-readable text format
-- File logging is **disabled by default** (no files created)
-- Set `LOG_TO_FILE=true` to enable optional file logging with JSON format
+
+* Logs are written **only to stdout/stderr** in human-readable text format
+* File logging is **disabled by default** (no files created)
+* Set `LOG_TO_FILE=true` to enable optional file logging with JSON format
 
 ### Observability (OpenTelemetry)
 
@@ -1202,6 +1493,7 @@ MCP Gateway includes **vendor-agnostic OpenTelemetry support** for distributed t
 | `OTEL_BSP_SCHEDULE_DELAY`       | Export interval (ms)                          | `5000`                | int > 0                                    |
 
 **Quick Start with Phoenix**:
+
 ```bash
 # Start Phoenix for LLM observability
 docker run -p 6006:6006 -p 4317:4317 arizephoenix/phoenix:latest
@@ -1225,7 +1517,7 @@ mcpgateway
 
 | Setting                   | Description                        | Default | Options                         |
 | ------------------------- | ---------------------------------- | ------- | ------------------------------- |
-| `TRANSPORT_TYPE`          | Enabled transports                 | `all`   | `http`,`ws`,`sse`,`stdio`,`all` |
+| `TRANSPORT_TYPE`          | Enabled transports                 | `all`   | `sse`,`streamablehttp`,`http`,`all` |
 | `WEBSOCKET_PING_INTERVAL` | WebSocket ping (secs)              | `30`    | int > 0                         |
 | `SSE_RETRY_TIMEOUT`       | SSE retry timeout (ms)             | `5000`  | int > 0                         |
 | `SSE_KEEPALIVE_ENABLED`   | Enable SSE keepalive events        | `true`  | bool                            |
@@ -1307,21 +1599,21 @@ mcpgateway
 
 MCP Gateway uses Alembic for database migrations. Common commands:
 
-- `make db-current` - Show current database version
-- `make db-upgrade` - Apply pending migrations
-- `make db-migrate` - Create new migration
-- `make db-history` - Show migration history
-- `make db-status` - Detailed migration status
+* `make db-current` - Show current database version
+* `make db-upgrade` - Apply pending migrations
+* `make db-migrate` - Create new migration
+* `make db-history` - Show migration history
+* `make db-status` - Detailed migration status
 
 #### Troubleshooting
 
 **Common Issues:**
 
-- **"No 'script_location' key found"**: Ensure you're running from the project root directory.
+* **"No 'script_location' key found"**: Ensure you're running from the project root directory.
 
-- **"Unknown SSE event: keepalive" warnings**: Some MCP clients don't recognize keepalive events. These warnings are harmless and don't affect functionality. To disable: `SSE_KEEPALIVE_ENABLED=false`
+* **"Unknown SSE event: keepalive" warnings**: Some MCP clients don't recognize keepalive events. These warnings are harmless and don't affect functionality. To disable: `SSE_KEEPALIVE_ENABLED=false`
 
-- **Connection timeouts with proxies/load balancers**: If experiencing timeouts, adjust keepalive interval to match your infrastructure: `SSE_KEEPALIVE_INTERVAL=60` (AWS ALB) or `240` (Azure).
+* **Connection timeouts with proxies/load balancers**: If experiencing timeouts, adjust keepalive interval to match your infrastructure: `SSE_KEEPALIVE_INTERVAL=60` (AWS ALB) or `240` (Azure).
 
 ### Development
 
@@ -1400,10 +1692,10 @@ This project supports deployment to [IBM Cloud Code Engine](https://cloud.ibm.co
 
 ### 🔧 Prerequisites
 
-- Podman **or** Docker installed locally
-- IBM Cloud CLI (use `make ibmcloud-cli-install` to install)
-- An [IBM Cloud API key](https://cloud.ibm.com/iam/apikeys) with access to Code Engine & Container Registry
-- Code Engine and Container Registry services **enabled** in your IBM Cloud account
+* Podman **or** Docker installed locally
+* IBM Cloud CLI (use `make ibmcloud-cli-install` to install)
+* An [IBM Cloud API key](https://cloud.ibm.com/iam/apikeys) with access to Code Engine & Container Registry
+* Code Engine and Container Registry services **enabled** in your IBM Cloud account
 
 ---
 
@@ -1557,7 +1849,6 @@ Handles any method name: `list_tools`, `list_gateways`, `prompts/get`, or invoke
 
 <details>
 <summary><strong>🔧 Tool Management /tools</strong></summary>
-
 
 ```bash
 # Register a new tool
@@ -1713,7 +2004,6 @@ curl -X DELETE -H "Authorization: Bearer $MCPGATEWAY_BEARER_TOKEN" http://localh
 
 <details>
 <summary><strong>📁 Resource Management /resources</strong></summary>
-
 
 ```bash
 # Register resource
@@ -1925,23 +2215,41 @@ make doctest-check   # Check coverage percentage
 ```
 
 **Coverage Status:**
-- ✅ **Transport Modules**: 100% (base, stdio, SSE, WebSocket, streamable HTTP)
-- ✅ **Utility Functions**: 100% (slug generation, JWT tokens, validation)
-- ✅ **Configuration**: 100% (settings, environment variables)
-- 🔄 **Service Classes**: ~60% (in progress)
-- 🔄 **Complex Classes**: ~40% (in progress)
+
+* ✅ **Transport Modules**: 100% (base, stdio, SSE, WebSocket, streamable HTTP)
+* ✅ **Utility Functions**: 100% (slug generation, JWT tokens, validation)
+* ✅ **Configuration**: 100% (settings, environment variables)
+* 🔄 **Service Classes**: ~60% (in progress)
+* 🔄 **Complex Classes**: ~40% (in progress)
 
 **Benefits:**
-- All documented examples are automatically tested
-- Documentation stays accurate and up-to-date
-- Developers can run examples directly from docstrings
-- Regression prevention through automated verification
+
+* All documented examples are automatically tested
+* Documentation stays accurate and up-to-date
+* Developers can run examples directly from docstrings
+* Regression prevention through automated verification
 
 For detailed information, see the [Doctest Coverage Guide](https://ibm.github.io/mcp-context-forge/development/doctest-coverage/).
 
 ---
 
 ## Project Structure
+
+### Agent Docs (AGENTS.md Index)
+
+* [Repository Agents Guide](AGENTS.md)
+* [Core Gateway](mcpgateway/AGENTS.md)
+* [Services](mcpgateway/services/AGENTS.md)
+* [Plugins](mcpgateway/plugins/AGENTS.md)
+* [Transports](mcpgateway/transports/AGENTS.md)
+* [Routers](mcpgateway/routers/AGENTS.md)
+* [Middleware](mcpgateway/middleware/AGENTS.md)
+* [Handlers](mcpgateway/handlers/AGENTS.md)
+* [Federation](mcpgateway/federation/AGENTS.md)
+* [Validation](mcpgateway/validation/AGENTS.md)
+* [Utils](mcpgateway/utils/AGENTS.md)
+* [Cache](mcpgateway/cache/AGENTS.md)
+* [Alembic/Migrations](mcpgateway/alembic/AGENTS.md)
 
 <details>
 <summary><strong>📁 Directory and file structure for mcpgateway</strong></summary>
@@ -2317,6 +2625,7 @@ devpi-clean          - Full cycle: build → upload → install locally
 devpi-status         - Show devpi server status
 devpi-web            - Open devpi web interface
 ```
+
 </details>
 
 ## 🔍 Troubleshooting
@@ -2384,7 +2693,7 @@ Missing or empty required vars cause a fast-fail at startup.
 3. Keep `make test` green and 100% coverage.
 4. Open a PR - describe your changes clearly.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details
 ---
 
 ## Changelog
@@ -2395,10 +2704,9 @@ A complete changelog can be found here: [CHANGELOG.md](./CHANGELOG.md)
 
 Licensed under the **Apache License 2.0** - see [LICENSE](./LICENSE)
 
-
 ## Core Authors and Maintainers
 
-- [Mihai Criveti](https://www.linkedin.com/in/crivetimihai) - Distinguished Engineer, Agentic AI
+* [Mihai Criveti](https://www.linkedin.com/in/crivetimihai) - Distinguished Engineer, Agentic AI
 
 Special thanks to our contributors for helping us improve ContextForge MCP Gateway:
 
