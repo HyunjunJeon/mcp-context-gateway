@@ -380,3 +380,30 @@ curl http://localhost:4444/a2a/my-agent/metrics \
 - Auth: set `JWT_SECRET_KEY`; export `MCPGATEWAY_BEARER_TOKEN` using the token utility for API calls.
 - Wrapper: set `MCP_SERVER_URL` and `MCP_AUTH` when using `mcpgateway.wrapper`.
 - TLS: `make certs` → `make serve-ssl`. Prefer environment variables for config; see `README.md`.
+
+## 문서 탐색
+
+- **mcpgateway**: [mcpgateway/AGENTS.md](mcpgateway/AGENTS.md)
+  - **cache**: [mcpgateway/cache/AGENTS.md](mcpgateway/cache/AGENTS.md)
+  - **federation**: [mcpgateway/federation/AGENTS.md](mcpgateway/federation/AGENTS.md)
+  - **handlers**: [mcpgateway/handlers/AGENTS.md](mcpgateway/handlers/AGENTS.md)
+  - **middleware**: [mcpgateway/middleware/AGENTS.md](mcpgateway/middleware/AGENTS.md)
+  - **plugins**: [mcpgateway/plugins/AGENTS.md](mcpgateway/plugins/AGENTS.md)
+    - **framework**: [mcpgateway/plugins/framework/AGENTS.md](mcpgateway/plugins/framework/AGENTS.md)
+  - **routers**: [mcpgateway/routers/AGENTS.md](mcpgateway/routers/AGENTS.md)
+  - **services**: [mcpgateway/services/AGENTS.md](mcpgateway/services/AGENTS.md)
+  - **transports**: [mcpgateway/transports/AGENTS.md](mcpgateway/transports/AGENTS.md)
+  - **utils**: [mcpgateway/utils/AGENTS.md](mcpgateway/utils/AGENTS.md)
+  - **validation**: [mcpgateway/validation/AGENTS.md](mcpgateway/validation/AGENTS.md)
+  - **alembic**: [mcpgateway/alembic/AGENTS.md](mcpgateway/alembic/AGENTS.md)
+- **agent_runtimes**: [agent_runtimes/AGENTS.md](agent_runtimes/AGENTS.md)
+  - **langchain_agent**: [agent_runtimes/langchain_agent/AGENTS.md](agent_runtimes/langchain_agent/AGENTS.md)
+- **mcp-servers**: [mcp-servers/AGENTS.md](mcp-servers/AGENTS.md)
+- **plugins**: [plugins/AGENTS.md](plugins/AGENTS.md)
+- **plugin_templates**: [plugin_templates/AGENTS.md](plugin_templates/AGENTS.md)
+- **docs**: [docs/AGENTS.md](docs/AGENTS.md)
+- **deployment**: [deployment/AGENTS.md](deployment/AGENTS.md)
+- **charts**: [charts/AGENTS.md](charts/AGENTS.md)
+- **tests**: [tests/AGENTS.md](tests/AGENTS.md)
+- **async_testing**: [async_testing/AGENTS.md](async_testing/AGENTS.md)
+- **examples**: [examples/AGENTS.md](examples/AGENTS.md)

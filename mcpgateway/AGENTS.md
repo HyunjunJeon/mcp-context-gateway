@@ -480,3 +480,20 @@ GET /ready     # 준비 상태 확인
 - **보안**: 다중 인증 및 입력 검증
 
 이 구조는 복잡한 분산 시스템을 구축하고 운영하는 데 필요한 모든 핵심 컴포넌트를 제공합니다.
+
+## 탐색
+
+- **⬆️ 프로젝트 루트**: [../../AGENTS.md](../AGENTS.md)
+- **하위 문서**
+  - [cache/AGENTS.md](cache/AGENTS.md)
+  - [federation/AGENTS.md](federation/AGENTS.md)
+  - [handlers/AGENTS.md](handlers/AGENTS.md)
+  - [middleware/AGENTS.md](middleware/AGENTS.md)
+  - [plugins/AGENTS.md](plugins/AGENTS.md)
+    - [plugins/framework/AGENTS.md](plugins/framework/AGENTS.md)
+  - [routers/AGENTS.md](routers/AGENTS.md)
+  - [services/AGENTS.md](services/AGENTS.md)
+  - [transports/AGENTS.md](transports/AGENTS.md)
+  - [utils/AGENTS.md](utils/AGENTS.md)
+  - [validation/AGENTS.md](validation/AGENTS.md)
+  - [alembic/AGENTS.md](alembic/AGENTS.md)
