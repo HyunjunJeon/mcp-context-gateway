@@ -1,10 +1,6 @@
 # MCP Gateway
 
-> 한국어 요약: FastAPI 기반의 MCP 게이트웨이/프록시로, REST와 MCP, A2A 에이전트를 단일 엔드포인트로 통합합니다. 툴/리소스/프롬프트 카탈로그, 가상 서버, 연합(Federation), 재시도/레이트리밋, 관측성(OpenTelemetry), 선택적 Admin UI, 그리고 다중 전송(SSE/stdio/Streamable HTTP/HTTP)을 지원합니다. OAuth 및 헤더 패스스루(전역/게이트웨이별) 설정이 가능하며, A2A(Agent-to-Agent) 표준을 통해 외부 에이전트와 상호작용할 수 있습니다.
-
-> Model Context Protocol gateway & proxy - unify REST, MCP, and A2A with federation, virtual servers, retries, security, and an optional admin UI.
-
-ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that federates MCP and REST services - unifying discovery, auth, rate-limiting, observability, virtual servers, multi-transport protocols, and an optional Admin UI into one clean endpoint for your AI clients. It runs as a fully compliant MCP server, deployable via PyPI or Docker, and scales to multi-cluster environments on Kubernetes with Redis-backed federation and caching.
+FastAPI 기반의 MCP 게이트웨이/프록시로, REST와 MCP, A2A 에이전트를 단일 엔드포인트로 통합합니다. 툴/리소스/프롬프트 카탈로그, 가상 서버, 연합(Federation), 재시도/레이트리밋, 관측성(OpenTelemetry), 선택적 Admin UI, 그리고 다중 전송(SSE/stdio/Streamable HTTP/HTTP)을 지원합니다. OAuth 및 헤더 패스스루(전역/게이트웨이별) 설정이 가능하며, A2A(Agent-to-Agent) 표준을 통해 외부 에이전트와 상호작용할 수 있습니다.
 
 ---
 
@@ -30,21 +26,18 @@ ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that 
         * 5.1.2. [2 - Create an on-the-spot venv & run the wrapper](#2---create-an-on-the-spot-venv--run-the-wrapper)
         * 5.1.3. [Claude Desktop JSON (runs through **uvx**)](#claude-desktop-json-runs-through-uvx)
     * 5.2. [🚀 Using with Claude Desktop (or any GUI MCP client)](#-using-with-claude-desktop-or-any-gui-mcp-client)
-* 6. [🚀 Quick Start: VS Code Dev Container](#-quick-start-vs-code-dev-container)
-    * 6.1. [1 - Clone & Open](#1---clone--open)
-    * 6.2. [2 - First-Time Build (Automatic)](#2---first-time-build-automatic)
-* 7. [Quick Start (manual install)](#quick-start-manual-install)
-    * 7.1. [Prerequisites](#prerequisites)
-    * 7.2. [One-liner (dev)](#one-liner-dev)
-    * 7.3. [Containerized (self-signed TLS)](#containerized-self-signed-tls)
-    * 7.4. [Smoke-test the API](#smoke-test-the-api)
-* 8. [Installation](#installation)
-    * 8.1. [Via Make](#via-make)
-    * 8.2. [UV (alternative)](#uv-alternative)
-    * 8.3. [pip (alternative)](#pip-alternative)
-    * 8.4. [Optional (PostgreSQL adapter)](#optional-postgresql-adapter)
-        * 8.4.1. [Quick Postgres container](#quick-postgres-container)
-* 9. [Configuration (`.env` or env vars)](#configuration-env-or-env-vars)
+* 6. [Quick Start (manual install)](#quick-start-manual-install)
+    * 6.1. [Prerequisites](#prerequisites)
+    * 6.2. [One-liner (dev)](#one-liner-dev)
+    * 6.3. [Containerized (self-signed TLS)](#containerized-self-signed-tls)
+    * 6.4. [Smoke-test the API](#smoke-test-the-api)
+* 7. [Installation](#installation)
+    * 7.1. [Via Make](#via-make)
+    * 7.2. [UV (alternative)](#uv-alternative)
+    * 7.3. [pip (alternative)](#pip-alternative)
+    * 7.4. [Optional (PostgreSQL adapter)](#optional-postgresql-adapter)
+        * 7.4.1. [Quick Postgres container](#quick-postgres-container)
+* 8. [Configuration (`.env` or env vars)](#configuration-env-or-env-vars)
     * 9.1. [Basic](#basic)
     * 9.2. [Authentication](#authentication)
     * 9.3. [UI Features](#ui-features)
@@ -59,32 +52,22 @@ ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that 
     * 9.12. [Database](#database)
     * 9.13. [Cache Backend](#cache-backend)
     * 9.14. [Development](#development)
-* 10. [Running](#running)
+* 9. [Running](#running)
     * 10.1. [Makefile](#makefile)
     * 10.2. [Script helper](#script-helper)
     * 10.3. [Manual (Uvicorn)](#manual-uvicorn)
-* 11. [Authentication examples](#authentication-examples)
-* 12. [☁️ AWS / Azure / OpenShift](#️-aws--azure--openshift)
-* 13. [☁️ IBM Cloud Code Engine Deployment](#️-ibm-cloud-code-engine-deployment)
-    * 13.1. [🔧 Prerequisites](#-prerequisites-1)
-    * 13.2. [📦 Environment Variables](#-environment-variables)
-    * 13.3. [🚀 Make Targets](#-make-targets)
-    * 13.4. [📝 Example Workflow](#-example-workflow)
-* 14. [API Endpoints](#api-endpoints)
-* 15. [Testing](#testing)
-* 16. [Project Structure](#project-structure)
-* 17. [API Documentation](#api-documentation)
-* 18. [Makefile targets](#makefile-targets)
-* 19. [🔍 Troubleshooting](#-troubleshooting)
-    * 19.1. [Diagnose the listener](#diagnose-the-listener)
-    * 19.2. [Why localhost fails on Windows](#why-localhost-fails-on-windows)
-        * 19.2.1. [Fix (Podman rootless)](#fix-podman-rootless)
-        * 19.2.2. [Fix (Docker Desktop > 4.19)](#fix-docker-desktop--419)
-* 20. [Contributing](#contributing)
-* 21. [Changelog](#changelog)
-* 22. [License](#license)
-* 23. [Core Authors and Maintainers](#core-authors-and-maintainers)
-* 24. [Star History and Project Activity](#star-history-and-project-activity)
+* 10. [Authentication examples](#authentication-examples)
+* 11. [☁️ AWS / Azure / OpenShift](#️-aws--azure--openshift)
+* 12. [API Endpoints](#api-endpoints)
+* 13. [Testing](#testing)
+* 14. [Project Structure](#project-structure)
+* 15. [API Documentation](#api-documentation)
+* 16. [Makefile targets](#makefile-targets)
+* 17. [🔍 Troubleshooting](#-troubleshooting)
+    * 17.1. [Diagnose the listener](#diagnose-the-listener)
+    * 17.2. [Why localhost fails on Windows](#why-localhost-fails-on-windows)
+        * 17.2.1. [Fix (Podman rootless)](#fix-podman-rootless)
+        * 17.2.2. [Fix (Docker Desktop > 4.19)](#fix-docker-desktop--419)
 
 <!-- vscode-markdown-toc-config
     numbering=true
@@ -94,7 +77,7 @@ ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that 
 
 ## 🚀 개요 & 목표
 
-**ContextForge MCP Gateway**는 [Model Context Protocol](https://modelcontextprotocol.io) (MCP) 서버와 REST API 앞단에 위치하여, AI 클라이언트를 위한 단일 통합 엔드포인트를 제공하는 게이트웨이/레지스트리/프록시입니다.
+**MCP Gateway**는 [Model Context Protocol](https://modelcontextprotocol.io) (MCP) 서버와 REST API 앞단에 위치하여, AI 클라이언트를 위한 단일 통합 엔드포인트를 제공하는 게이트웨이/레지스트리/프록시입니다.
 
 **⚠️ 주의**: 현재 릴리스(0.6.0)는 알파/얼리 베타 수준입니다. 프로덕션 용도로 사용하지 말고, 로컬 개발/테스트/실험 목적에 한해 사용하세요. 기능과 API, 동작은 예고 없이 변경될 수 있습니다. 프로덕션 배포 전에는 보안 검토와 추가 방어 체계를 반드시 갖추십시오. 대규모/멀티테넌트 운영에 필요한 항목 중 일부는 계속 [로드맵](https://ibm.github.io/mcp-context-forge/architecture/roadmap/)에 따라 발전 중입니다.
 
@@ -114,10 +97,6 @@ ContextForge MCP Gateway is a feature-rich gateway, proxy and MCP Registry that 
 * 툴/리소스/프롬프트/서버 및 A2A 에이전트 메트릭(리셋 엔드포인트 포함)
 
 ![MCP Gateway Architecture](https://ibm.github.io/mcp-context-forge/images/mcpgateway.svg)
-
-For a list of upcoming features, check out the [ContextForge MCP Gateway Roadmap](https://ibm.github.io/mcp-context-forge/architecture/roadmap/)
-
-**⚠️ Important**: MCP Gateway is not a standalone product - it is an open source component with **NO OFFICIAL SUPPORT** from IBM or its affiliates that can be integrated into your own solution architecture. If you choose to use it, you are responsible for evaluating its fit, securing the deployment, and managing its lifecycle. See [SECURITY.md](./SECURITY.md) for more details.
 
 ---
 
@@ -1088,84 +1067,6 @@ uv run --directory . -m mcpgateway.wrapper # Use this just for testing, as the C
 Need help? See:
 
 * **MCP Debugging Guide** - [https://modelcontextprotocol.io/docs/tools/debugging](https://modelcontextprotocol.io/docs/tools/debugging)
-
----
-
-## 🚀 빠른 시작: VS Code Dev Container
-
-Spin up a fully-loaded dev environment (Python 3.11, Docker/Podman CLI, all project dependencies) in just two clicks.
-
----
-
-<details>
-<summary><strong>📋 Prerequisites</strong></summary>
-
-* **VS Code** with the [Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers)
-* **Docker** or **Podman** installed and running locally
-
-</details>
-
-<details>
-<summary><strong>🧰 Setup Instructions</strong></summary>
-
-### 1 - 클론 & 열기
-
-```bash
-git clone https://github.com/ibm/mcp-context-forge.git
-cd mcp-context-forge
-code .
-```
-
-VS Code will detect the `.devcontainer` and prompt:
-**"Reopen in Container"**
-*or* manually run: <kbd>Ctrl/Cmd ⇧ P</kbd> → **Dev Containers: Reopen in Container**
-
----
-
-### 2 - 최초 빌드(자동)
-
-The container build will:
-
-* Install system packages & Python 3.11
-* Run `make install-dev` to pull all dependencies
-* Execute tests to verify the toolchain
-
-You'll land in `/workspace` ready to develop.
-
-</details>
-
-<details>
-<summary><strong>🛠️ Daily Developer Workflow</strong></summary>
-
-Common tasks inside the container:
-
-```bash
-# Start dev server (hot reload)
-make dev            # http://localhost:4444
-
-# Run tests & linters
-make test
-make lint
-```
-
-Optional:
-
-* `make bash` - drop into an interactive shell
-* `make clean` - clear build artefacts & caches
-* Port forwarding is automatic (customize via `.devcontainer/devcontainer.json`)
-
-</details>
-
-<details>
-<summary><strong>☁️ GitHub Codespaces: 1-Click Cloud IDE</strong></summary>
-
-No local Docker? Use Codespaces:
-
-1. Go to the repo → **Code ▸ Codespaces ▸ Create codespace on main**
-2. Wait for the container image to build in the cloud
-3. Develop using the same workflow above
-
-</details>
 
 ---
 
@@ -2203,34 +2104,6 @@ make test            # Run unit tests
 make lint            # Run lint tools
 ```
 
-## Doctest Coverage
-
-MCP Context Forge implements comprehensive doctest coverage to ensure all code examples in documentation are tested and verified:
-
-```bash
-make doctest         # Run all doctests
-make doctest-verbose # Run with detailed output
-make doctest-coverage # Generate coverage report
-make doctest-check   # Check coverage percentage
-```
-
-**Coverage Status:**
-
-* ✅ **Transport Modules**: 100% (base, stdio, SSE, WebSocket, streamable HTTP)
-* ✅ **Utility Functions**: 100% (slug generation, JWT tokens, validation)
-* ✅ **Configuration**: 100% (settings, environment variables)
-* 🔄 **Service Classes**: ~60% (in progress)
-* 🔄 **Complex Classes**: ~40% (in progress)
-
-**Benefits:**
-
-* All documented examples are automatically tested
-* Documentation stays accurate and up-to-date
-* Developers can run examples directly from docstrings
-* Regression prevention through automated verification
-
-For detailed information, see the [Doctest Coverage Guide](https://ibm.github.io/mcp-context-forge/development/doctest-coverage/).
-
 ---
 
 ## Project Structure
@@ -2685,43 +2558,3 @@ Then edit `DATABASE_URL`, `JWT_SECRET_KEY`, `BASIC_AUTH_PASSWORD`, etc.
 Missing or empty required vars cause a fast-fail at startup.
 
 </details>
-
-## Contributing
-
-1. Fork the repo, create a feature branch.
-2. Run `make lint` and fix any issues.
-3. Keep `make test` green and 100% coverage.
-4. Open a PR - describe your changes clearly.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details
----
-
-## Changelog
-
-A complete changelog can be found here: [CHANGELOG.md](./CHANGELOG.md)
-
-## License
-
-Licensed under the **Apache License 2.0** - see [LICENSE](./LICENSE)
-
-## Core Authors and Maintainers
-
-* [Mihai Criveti](https://www.linkedin.com/in/crivetimihai) - Distinguished Engineer, Agentic AI
-
-Special thanks to our contributors for helping us improve ContextForge MCP Gateway:
-
-<a href="https://github.com/ibm/mcp-context-forge/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ibm/mcp-context-forge&max=100&anon=0&columns=10" />
-</a>
-
-## Star History and Project Activity
-
-[![Star History Chart](https://api.star-history.com/svg?repos=ibm/mcp-context-forge&type=Date)](https://www.star-history.com/#ibm/mcp-context-forge&Date)
-
-<!-- === Usage Stats === -->
-[![PyPi Downloads](https://static.pepy.tech/badge/mcp-contextforge-gateway/month)](https://pepy.tech/project/mcp-contextforge-gateway)&nbsp;
-[![Stars](https://img.shields.io/github/stars/ibm/mcp-context-forge?style=social)](https://github.com/ibm/mcp-context-forge/stargazers)&nbsp;
-[![Forks](https://img.shields.io/github/forks/ibm/mcp-context-forge?style=social)](https://github.com/ibm/mcp-context-forge/network/members)&nbsp;
-[![Contributors](https://img.shields.io/github/contributors/ibm/mcp-context-forge)](https://github.com/ibm/mcp-context-forge/graphs/contributors)&nbsp;
-[![Last Commit](https://img.shields.io/github/last-commit/ibm/mcp-context-forge)](https://github.com/ibm/mcp-context-forge/commits)&nbsp;
-[![Open Issues](https://img.shields.io/github/issues/ibm/mcp-context-forge)](https://github.com/ibm/mcp-context-forge/issues)&nbsp;

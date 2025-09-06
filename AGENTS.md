@@ -197,19 +197,25 @@ MCP helpers
 
 ### LangChain 에이전트 아키텍처
 
-```text
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   OpenAI API    │    │   LangChain     │    │   MCP Gateway   │
-│   Compatible    │◄──►│   Agent Runtime │◄──►│   Tool Catalog  │
-│   Client        │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  ChatGPT/Claude │    │ AgentExecutor + │    │   Tool Service  │
-│  Web UI, CLI    │    │  Function Tools │    │  Resource Service│
-│  IDE Plugins    │    │                 │    │  Prompt Service  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+```mermaid
+flowchart TB
+  OpenAI["OpenAI API Compatible Client"]
+  LCRuntime["LangChain Agent Runtime"]
+  MCP["MCP Gateway Tool Catalog"]
+
+  OpenAI <--> LCRuntime
+  LCRuntime <--> MCP
+
+  subgraph Lower[""]
+    direction LR
+    UI["ChatGPT/Claude / Web UI, CLI, IDE Plugins"]
+    AgentExec["AgentExecutor + Function Tools"]
+    Services["Tool Service / Resource Service / Prompt Service"]
+  end
+
+  OpenAI --> UI
+  LCRuntime --> AgentExec
+  MCP --> Services
 ```
 
 **주요 컴포넌트**:
@@ -221,18 +227,22 @@ MCP helpers
 
 ### A2A (Agent-to-Agent) 아키텍처
 
-```text
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   External AI   │    │   A2A Service   │    │   MCP Gateway   │
-│   Agent/Service │◄──►│   (JSON-RPC)   │◄──►│   Tool Registry │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Standardized   │    │ Async Event     │    │  Metrics &      │
-│  Protocol       │    │ Streams         │    │  Monitoring     │
-│  (v1.0/2025)    │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+```mermaid
+flowchart TB
+  External["External AI Agent/Service"]
+  A2AService["A2A Service (JSON-RPC)"]
+  Gateway["MCP Gateway Tool Registry"]
+
+  External <--> A2AService
+  A2AService <--> Gateway
+
+  Proto["Standardized Protocol (v1.0/2025)"]
+  Events["Async Event Streams"]
+  Metrics["Metrics & Monitoring"]
+
+  External --> Proto
+  A2AService --> Events
+  Gateway --> Metrics
 ```
 
 **주요 특징**:
@@ -244,23 +254,51 @@ MCP helpers
 
 ### 통합 에이전트 아키텍처
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    MCP Gateway Ecosystem                     │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
-│  │ LangChain   │ │   A2A       │ │ Federation  │ │ Plugins │ │
-│  │ Agent       │ │ Agents      │ │ Gateways    │ │ System  │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │              MCP Gateway Core Services                  │ │
-│  ├─────────────────────────────────────────────────────────┤ │
-│  │ Tools │ Resources │ Prompts │ Servers │ Gateways │ Tags │ │
-│  └─────────────────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│              Transport Layer (SSE/WebSocket/HTTP)           │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  subgraph Ecosystem["MCP Gateway Ecosystem"]
+    direction TB
+
+    subgraph Capabilities[""]
+      direction LR
+      LC["LangChain Agent"]
+      A2A["A2A Agents"]
+      FED["Federation Gateways"]
+      PL["Plugins System"]
+    end
+
+    subgraph Core["MCP Gateway Core Services"]
+      direction LR
+      CoreHub(("Core"))
+      Tools["Tools"]
+      Resources["Resources"]
+      Prompts["Prompts"]
+      Servers["Servers"]
+      Gateways["Gateways"]
+      Tags["Tags"]
+      CoreHub --- Tools
+      CoreHub --- Resources
+      CoreHub --- Prompts
+      CoreHub --- Servers
+      CoreHub --- Gateways
+      CoreHub --- Tags
+    end
+
+    subgraph Transport["Transport Layer"]
+      direction LR
+      SSE["SSE"]
+      WS["WebSocket"]
+      HTTP["HTTP"]
+    end
+
+    LC --> CoreHub
+    A2A --> CoreHub
+    FED --> CoreHub
+    PL --> CoreHub
+    CoreHub --> SSE
+    CoreHub --> WS
+    CoreHub --> HTTP
+  end
 ```
 
 ## Architecture Overview
@@ -384,20 +422,20 @@ curl http://localhost:4444/a2a/my-agent/metrics \
 ## 문서 탐색
 
 - **mcpgateway**: [mcpgateway/AGENTS.md](mcpgateway/AGENTS.md)
-  - **cache**: [mcpgateway/cache/AGENTS.md](mcpgateway/cache/AGENTS.md)
-  - **federation**: [mcpgateway/federation/AGENTS.md](mcpgateway/federation/AGENTS.md)
-  - **handlers**: [mcpgateway/handlers/AGENTS.md](mcpgateway/handlers/AGENTS.md)
-  - **middleware**: [mcpgateway/middleware/AGENTS.md](mcpgateway/middleware/AGENTS.md)
-  - **plugins**: [mcpgateway/plugins/AGENTS.md](mcpgateway/plugins/AGENTS.md)
-    - **framework**: [mcpgateway/plugins/framework/AGENTS.md](mcpgateway/plugins/framework/AGENTS.md)
-  - **routers**: [mcpgateway/routers/AGENTS.md](mcpgateway/routers/AGENTS.md)
-  - **services**: [mcpgateway/services/AGENTS.md](mcpgateway/services/AGENTS.md)
-  - **transports**: [mcpgateway/transports/AGENTS.md](mcpgateway/transports/AGENTS.md)
-  - **utils**: [mcpgateway/utils/AGENTS.md](mcpgateway/utils/AGENTS.md)
-  - **validation**: [mcpgateway/validation/AGENTS.md](mcpgateway/validation/AGENTS.md)
-  - **alembic**: [mcpgateway/alembic/AGENTS.md](mcpgateway/alembic/AGENTS.md)
+    - **cache**: [mcpgateway/cache/AGENTS.md](mcpgateway/cache/AGENTS.md)
+    - **federation**: [mcpgateway/federation/AGENTS.md](mcpgateway/federation/AGENTS.md)
+    - **handlers**: [mcpgateway/handlers/AGENTS.md](mcpgateway/handlers/AGENTS.md)
+    - **middleware**: [mcpgateway/middleware/AGENTS.md](mcpgateway/middleware/AGENTS.md)
+    - **plugins**: [mcpgateway/plugins/AGENTS.md](mcpgateway/plugins/AGENTS.md)
+        - **framework**: [mcpgateway/plugins/framework/AGENTS.md](mcpgateway/plugins/framework/AGENTS.md)
+    - **routers**: [mcpgateway/routers/AGENTS.md](mcpgateway/routers/AGENTS.md)
+    - **services**: [mcpgateway/services/AGENTS.md](mcpgateway/services/AGENTS.md)
+    - **transports**: [mcpgateway/transports/AGENTS.md](mcpgateway/transports/AGENTS.md)
+    - **utils**: [mcpgateway/utils/AGENTS.md](mcpgateway/utils/AGENTS.md)
+    - **validation**: [mcpgateway/validation/AGENTS.md](mcpgateway/validation/AGENTS.md)
+    - **alembic**: [mcpgateway/alembic/AGENTS.md](mcpgateway/alembic/AGENTS.md)
 - **agent_runtimes**: [agent_runtimes/AGENTS.md](agent_runtimes/AGENTS.md)
-  - **langchain_agent**: [agent_runtimes/langchain_agent/AGENTS.md](agent_runtimes/langchain_agent/AGENTS.md)
+    - **langchain_agent**: [agent_runtimes/langchain_agent/AGENTS.md](agent_runtimes/langchain_agent/AGENTS.md)
 - **mcp-servers**: [mcp-servers/AGENTS.md](mcp-servers/AGENTS.md)
 - **plugins**: [plugins/AGENTS.md](plugins/AGENTS.md)
 - **plugin_templates**: [plugin_templates/AGENTS.md](plugin_templates/AGENTS.md)

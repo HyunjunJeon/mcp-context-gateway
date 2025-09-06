@@ -31,8 +31,10 @@ alembic/
 ## 핵심 컴포넌트 설명
 
 ### `alembic.ini` - 설정 파일
+
 **역할**: Alembic의 전역 설정을 정의
 **주요 설정**:
+
 - 데이터베이스 연결 정보
 - 마이그레이션 파일 위치
 - 스크립트 템플릿 설정
@@ -48,8 +50,10 @@ keys = root,sqlalchemy,alembic
 ```
 
 ### `env.py` - 실행 환경
+
 **역할**: 마이그레이션 실행 시 필요한 환경을 설정
 **주요 기능**:
+
 - 데이터베이스 연결 설정
 - SQLAlchemy 메타데이터 연결
 - 마이그레이션 컨텍스트 구성
@@ -61,8 +65,10 @@ target_metadata = Base.metadata
 ```
 
 ### `script.py.mako` - 스크립트 템플릿
+
 **역할**: 새로운 마이그레이션 파일 생성 시 사용되는 Jinja2 템플릿
 **포함 내용**:
+
 - 업그레이드 함수 템플릿
 - 다운그레이드 함수 템플릿
 - 리비전 식별자 및 의존성 설정
@@ -107,23 +113,28 @@ def downgrade() -> None:
 ### 코어 기능 마이그레이션들
 
 #### 1. 기본 스키마 생성
+
 - **f8c9d3e2a1b4**: OAuth 구성 추가
 - **3b17fdc40a8d**: 게이트웨이 패스스루 헤더 추가
 - **eb17fd368f9d**: 패스스루 헤더와 태그 병합
 
 #### 2. 메타데이터 향상
+
 - **34492f99a0c4**: 모든 테이블에 포괄적 메타데이터 추가
 - **e4fc04d1a442**: 테이블에 어노테이션 추가
 - **e75490e949b1**: 향상된 상태 필드 추가
 
 #### 3. 태그 시스템
+
 - **cc7b95fec5d9**: 모든 엔티티에 태그 지원 추가
 
 #### 4. A2A 기능
+
 - **add_a2a_agents_and_metrics**: A2A 에이전트 및 메트릭 추가
 - **1fc1795f6983**: A2A와 커스텀 이름 변경사항 병합
 
 #### 5. 네이밍 및 구조 개선
+
 - **733159a4fa74**: 도구에 표시 이름 추가
 - **b77ca9d2de7e**: UUID PK 및 슬러그 리팩토링
 - **c9dd86c0aac9**: 원본 이름 슬러그 제거 및 표시 이름 추가
@@ -131,6 +142,7 @@ def downgrade() -> None:
 ## 마이그레이션 작업 유형
 
 ### 1. 테이블 작업
+
 ```python
 # 테이블 생성
 op.create_table('new_table',
@@ -143,6 +155,7 @@ op.drop_table('old_table')
 ```
 
 ### 2. 컬럼 작업
+
 ```python
 # 컬럼 추가
 op.add_column('table_name', sa.Column('new_column', sa.String()))
@@ -158,6 +171,7 @@ op.drop_column('table_name', 'column_name')
 ```
 
 ### 3. 인덱스 및 제약조건
+
 ```python
 # 인덱스 생성
 op.create_index('idx_table_column', 'table_name', ['column_name'])
@@ -176,6 +190,7 @@ op.create_unique_constraint('uq_table_column', 'table_name', ['column_name'])
 ## 마이그레이션 워크플로우
 
 ### 1. 모델 변경
+
 ```python
 # mcpgateway/db.py에서 모델 수정
 class Tool(Base):
@@ -184,6 +199,7 @@ class Tool(Base):
 ```
 
 ### 2. 마이그레이션 생성
+
 ```bash
 # 변경사항 감지하여 마이그레이션 파일 생성
 alembic revision --autogenerate -m "add display_name to tools"
@@ -193,6 +209,7 @@ make db-new MSG="add display_name to tools"
 ```
 
 ### 3. 마이그레이션 검토 및 수정
+
 ```python
 # 생성된 마이그레이션 파일 검토
 # alembic/versions/xxxxx_add_display_name_to_tools.py
@@ -205,6 +222,7 @@ def downgrade():
 ```
 
 ### 4. 마이그레이션 적용
+
 ```bash
 # 데이터베이스에 적용
 alembic upgrade head
@@ -214,6 +232,7 @@ make db-up
 ```
 
 ### 5. 마이그레이션 롤백 (필요시)
+
 ```bash
 # 마지막 마이그레이션 롤백
 alembic downgrade -1
@@ -229,6 +248,7 @@ make db-down REV=<revision_id>
 ## 마이그레이션 모범 사례
 
 ### 1. 의미 있는 커밋 메시지
+
 ```bash
 # 좋은 예
 alembic revision --autogenerate -m "add user authentication fields to tools table"
@@ -238,6 +258,7 @@ alembic revision --autogenerate -m "changes"
 ```
 
 ### 2. 작은 단위의 마이그레이션
+
 ```python
 # 하나의 마이그레이션에 하나의 논리적 변경만 포함
 def upgrade():
@@ -251,6 +272,7 @@ def upgrade():
 ```
 
 ### 3. 안전한 다운그레이드
+
 ```python
 def upgrade():
     # 업그레이드 시 NOT NULL 제약조건 추가
@@ -266,6 +288,7 @@ def downgrade():
 ## 데이터베이스별 고려사항
 
 ### SQLite
+
 ```python
 # SQLite는 제약조건 삭제가 제한적
 def upgrade():
@@ -277,6 +300,7 @@ def upgrade():
 ```
 
 ### PostgreSQL
+
 ```python
 # PostgreSQL은 고급 기능 활용 가능
 def upgrade():
@@ -289,6 +313,7 @@ def upgrade():
 ## 모니터링 및 디버깅
 
 ### 마이그레이션 상태 확인
+
 ```bash
 # 현재 적용된 리비전 확인
 alembic current
@@ -302,6 +327,7 @@ make db-history
 ```
 
 ### 마이그레이션 충돌 해결
+
 ```python
 # 병합 충돌 발생 시
 def upgrade():
@@ -316,6 +342,7 @@ def downgrade():
 ## CI/CD 통합
 
 ### 자동 마이그레이션 적용
+
 ```yaml
 # .github/workflows/deploy.yml
 - name: Run database migrations
@@ -326,6 +353,7 @@ def downgrade():
 ```
 
 ### 마이그레이션 검증
+
 ```yaml
 # 마이그레이션 파일이 유효한지 검증
 - name: Validate migrations

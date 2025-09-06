@@ -68,27 +68,12 @@
     <div class="w-full max-w-screen-2xl mx-auto px-4 py-8">
       <header class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">
-          MCP Context Forge - Gateway Administration
+          MCP Gateway Administration
         </h1>
 
         <p class="text-gray-600 dark:text-gray-400">
           Manage tools, resources, prompts, servers, and federated gateways
           (remote MCP servers)
-          <span class="mx-2 text-gray-400">|</span>
-          <a
-            href="https://ibm.github.io/mcp-context-forge/"
-            target="_blank"
-            class="text-indigo-600 dark:text-indigo-500 hover:underline"
-          >
-            Docs</a
-          >
-          <span class="mx-2 text-gray-400">|</span>
-          <a
-            href="https://github.com/IBM/mcp-context-forge"
-            target="_blank"
-            class="text-indigo-600 dark:text-indigo-500 hover:underline"
-            >⭐ Star mcp-context-forge on GitHub</a
-          >
         </p>
       </header>
 
@@ -110,21 +95,21 @@
               data-testid="tools-tab"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Global Tools
+              Tools
             </a>
             <a
               href="#resources"
               id="tab-resources"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Global Resources
+              리소스
             </a>
             <a
               href="#prompts"
               id="tab-prompts"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Global Prompts
+              프롬프트
             </a>
             <a
               href="#gateways"
@@ -132,7 +117,7 @@
               data-testid="gateways-tab"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Gateways/MCP Servers
+              게이트웨이/MCP 서버
             </a>
             {% if a2a_enabled %}
             <a
@@ -156,21 +141,21 @@
               id="tab-metrics"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Metrics
+              메트릭
             </a>
             <a
               href="#logs"
               id="tab-logs"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Logs
+              로그
             </a>
             <a
               href="#export-import"
               id="tab-export-import"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Export/Import
+              내보내기/가져오기
             </a>
             <!-- New Version tab (opens separate /version page) -->
             <a
@@ -178,7 +163,7 @@
               id="tab-version-info"
               class="tab-link border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
-              Version and Environment Info
+              정보
             </a>
             <button @click="darkMode = !darkMode" class="p-2">
               <span x-text="darkMode ? '☀️' : '🌙'"></span>
@@ -195,7 +180,7 @@
               <h2
                 class="text-lg font-medium text-gray-900 dark:text-white mb-4"
               >
-                System Logs
+                시스템 로그
               </h2>
 
               <!-- Log Filters -->

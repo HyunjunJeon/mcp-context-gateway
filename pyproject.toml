@@ -96,7 +96,7 @@ fuzz = [
     "hypothesis>=6.138.2",
     "pytest-benchmark>=5.1.0",
     "pytest-xdist>=3.8.0",
-    "schemathesis>=4.1.0",
+    "schemathesis>=3.35.0,<4.0.0",
 ]
 
 # Coverage-guided fuzzing (requires clang/libfuzzer)
@@ -110,10 +110,10 @@ alembic = [
 
 # Observability dependencies (optional)
 observability = [
-    "opentelemetry-api>=1.36.0",
-    "opentelemetry-exporter-otlp>=1.36.0",
-    "opentelemetry-exporter-otlp-proto-grpc>=1.36.0",
-    "opentelemetry-sdk>=1.36.0",
+    "opentelemetry-api>=1.25.0,<1.26.0",
+    "opentelemetry-exporter-otlp>=1.25.0,<1.26.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.25.0,<1.26.0",
+    "opentelemetry-sdk>=1.25.0,<1.26.0",
 ]
 
 # Additional observability backends (optional)
@@ -122,13 +122,13 @@ observability-jaeger = [
 ]
 
 observability-zipkin = [
-    "opentelemetry-exporter-zipkin>=1.36.0",
+    "opentelemetry-exporter-zipkin>=1.25.0,<1.26.0",
 ]
 
 observability-all = [
     "mcp-contextforge-gateway[observability]>=0.5.0",
     "opentelemetry-exporter-jaeger>=1.21.0",
-    "opentelemetry-exporter-zipkin>=1.36.0",
+    "opentelemetry-exporter-zipkin>=1.25.0,<1.26.0",
 ]
 
 # Async SQLite Driver (optional)
@@ -197,7 +197,7 @@ dev = [
     "radon>=6.0.1",
     "redis>=6.4.0",
     "ruff>=0.12.10",
-    "semgrep>=1.132.1",
+    "semgrep>=1.135.0",
     "settings-doc>=4.3.2",
     "snakeviz>=2.2.2",
     "tomlcheck>=0.2.3",
